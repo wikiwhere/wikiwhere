@@ -39,30 +39,6 @@ void get_page_data(sqlite3_stmt* get_page, string title, int* page_id, string& p
 	page_title = temp_page_title;
 }
 
-vector<tuple<int, string>> get_page_links(sqlite3_stmt* get_page, sqlite3_stmt* get_links, int page_id) {
-  vector<tuple<int, string>> child_ids;
-	int rc;
-
-  sqlite3_reset(get_links);
-	sqlite3_bind_int(get_links, 1, page_id);
-
-	do {
-		rc = sqlite3_step(get_links);
-
-		if (rc != SQLITE_ROW) break;
-
-    int child_id;
-
-		string link_title(reinterpret_cast<const char*>(sqlite3_column_text(get_links, 0)));
-    string child_title;
-    get_page_data(get_page, link_title, &child_id, child_title, SQLITE_STATIC);
-
-    if (child_id != -1) child_ids.push_back(make_tuple (child_id, child_title));
-	} while (true);
-
-  return child_ids;
-}
-
 vector<string> get_child_titles(sqlite3_stmt* get_page, sqlite3_stmt* get_links, int page_id) {
   vector<string> child_titles;
 	int rc;
@@ -79,17 +55,6 @@ vector<string> get_child_titles(sqlite3_stmt* get_page, sqlite3_stmt* get_links,
 	} while (true);
 
   return child_titles;
-}
-
-vector<tuple<int, string>> get_children(sqlite3_stmt* get_page, sqlite3_stmt* get_links, string title, sqlite3_destructor_type destructor = SQLITE_TRANSIENT) {
-	int page_id;
-	string page_title;
-
-	get_page_data(get_page, title, &page_id, page_title, destructor);
-
-	cout << "id: " << page_id << " title: " << page_title << endl;
-
-	return get_page_links(get_page, get_links, page_id);
 }
 
 int main(int argc, char* argv[]) {
