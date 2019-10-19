@@ -3,6 +3,8 @@
 #include <vector>
 #include <cstring>
 #include <tuple>
+#include <chrono>
+#include <omp.h>
 #include "sqlite3/sqlite3.h"
 #include "trie.hpp"
 
@@ -59,6 +61,7 @@ vector<string> get_child_titles(sqlite3_stmt* get_page, sqlite3_stmt* get_links,
 
 int main(int argc, char* argv[]) {
 
+
 	sqlite3* db_page;
 	sqlite3* db_pagelinks;
 	int rc_page;
@@ -101,6 +104,10 @@ int main(int argc, char* argv[]) {
   
   t.insert(source->title);
   q.push(source);
+
+  // begin timing
+  auto start = std::chrono::system_clock::now();
+
   while (!q.empty()) {
     page* v = q.front();
     q.pop();
@@ -111,11 +118,19 @@ int main(int argc, char* argv[]) {
         cout << current->id << " " << current->title << endl;
         current = current->parent;
       }
+      //stop timing  and display runtime
+  	  auto end = std::chrono::system_clock::now();
+  	  auto elapsed_seconds = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
+  	  std::cout << "\nruntime:" << elapsed_seconds.count() << " ms\n\n";
       return 0;
     }
 
     vector<string> children = get_child_titles(get_page, get_links, v->id);
-    for (int i = 0, len = children.size(); i < len; i++) {
+    int len = children.size();
+
+    #pragma omp parallel for num_threads(2)
+    for (int i = 0; i < len; i++) {
+      cout << "theads: " << omp_get_num_threads() << endl;
       string child_title = children[i];
       // cout << child_title << endl;
       if (!t.search(child_title)) {
@@ -129,7 +144,10 @@ int main(int argc, char* argv[]) {
     }
   }
 
+
+  
+
   cout << "not found" << endl;
 
-	return 0;
+  return 0;
 }
