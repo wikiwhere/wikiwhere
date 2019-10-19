@@ -1,6 +1,6 @@
-const labelOffsetX = 6;
-const labelOffsetY = 3;
-const circleRadius = 5;
+let labelOffsetX = 6;
+let labelOffsetY = 3;
+let circleRadius = 5;
 
 let width = 960,
     height = 600;
@@ -9,23 +9,49 @@ let scale = d3.scaleOrdinal(d3.schemeCategory10);
 let color = (d) => scale(d.group);
 
 let data = {
-    "nodes": [
-        {
-            "id": "Article 1",
-            "group": 1
-        },
-        {
-            "id": "Article 2",
-            "group": 2
-        },
+    nodes: [
+        {id: "Article 1", group: 1},
+        {id: "Article 2", group: 2},
     ],
-    "links": [
-        {"source": "Article 1", "target": "Article 2"},
+    links: [
+        {source: "Article 1", target: "Article 2"},
     ]
 };
 
 let links = data.links.map(d => Object.create(d));
 let nodes = data.nodes.map(d => Object.create(d));
+
+let restart = () => {
+    simulation
+        .nodes(nodes)
+        .on("tick", ticked);
+
+    simulation.force("link")
+        .links(links);
+};
+
+let search = () => {
+    let newNodes = [
+        {
+            id: "Article 3",
+            group: 3
+        },
+        {
+            id: "Article 4",
+            group: 4
+        }];
+    let newLinks = [
+        {source: "Article 3", target: "Article 2"},
+        {source: "Article 4", target: "Article 3"},
+    ];
+
+    nodes = [...nodes, ...newNodes];
+    links = [...links, ...newLinks];
+
+    let svg = d3.select("svg");
+
+    restart();
+};
 
 let simulation = d3.forceSimulation(nodes)
     .force("link", d3.forceLink(links).id(d => d.id))
@@ -104,8 +130,8 @@ let labels = node.append("text")
     .text((d) => {
         return d.id;
     })
-    .attr('x', labelOffsetX)
-    .attr('y', labelOffsetY);
+    .attr("x", labelOffsetX)
+    .attr("y", labelOffsetY);
 
 node.append("title")
     .text((d) => {
