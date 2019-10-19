@@ -58,12 +58,12 @@ drag = simulation => {
         }
         d.fx = d.x;
         d.fy = d.y;
-    }
+    };
 
     let dragged = (d) => {
         d.fx = d3.event.x;
         d.fy = d3.event.y;
-    }
+    };
 
     let dragEnded = (d) => {
         if (!d3.event.active) {
@@ -71,15 +71,15 @@ drag = simulation => {
         }
         d.fx = null;
         d.fy = null;
-    }
+    };
 
     return d3.drag()
         .on("start", dragStarted)
         .on("drag", dragged)
         .on("end", dragEnded);
-}
+};
 
-let svg = d3.select("svg")
+let svg = d3.select("svg");
 
 let link = svg.append("g")
     .attr("class", "links")
@@ -93,7 +93,7 @@ let node = svg.append("g")
     .attr("class", "nodes")
     .selectAll("g")
     .data(nodes)
-    .enter().append("g")
+    .enter().append("g");
 
 let circles = node.append("circle")
     .attr("r", circleRadius)
