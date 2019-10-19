@@ -1,6 +1,8 @@
 #include <iostream>
 #include <queue>
 #include <vector>
+#include <cstring>
+#include <tuple>
 #include "sqlite3/sqlite3.h"
 
 typedef void (*sqlite3_destructor_type)(void*);
@@ -9,31 +11,60 @@ typedef void (*sqlite3_destructor_type)(void*);
 
 using namespace std;
 
-void get_page_data(sqlite3_stmt* get_page, char* title, int* page_id, const unsigned char** page_title, sqlite3_destructor_type destructor = SQLITE_TRANSIENT) {
-	if (sqlite3_bind_text(get_page, 1, title, -1, destructor)) {
-		cout << "Bind failed" << endl;
+void get_page_data(sqlite3_stmt* get_page, string title, int* page_id, string& page_title, sqlite3_destructor_type destructor = SQLITE_TRANSIENT) {
+  sqlite3_reset(get_page);
+	int rc = sqlite3_bind_text(get_page, 1, title.c_str(), -1, destructor);
+	if (rc) {
+		cout << "Bind failed " << rc << endl;
 	}
 
-	sqlite3_step(get_page);
-	*page_id = sqlite3_column_int64(get_page, 0);
-	*page_title = sqlite3_column_text(get_page, 1);
+	rc = sqlite3_step(get_page);
+  if (rc != SQLITE_ROW) {
+    if (page_id != 0) *page_id = -1;
+    page_title = "";
+
+    return;
+  }
+
+  string temp_page_title(reinterpret_cast<const char*>(sqlite3_column_text(get_page, 1)));
+
+	if (page_id != 0) *page_id = sqlite3_column_int64(get_page, 0);
+	page_title = temp_page_title;
 }
 
-void get_page_links(sqlite3_stmt* get_links, int page_id, vector<string>& link_titles) {
-
-	sqlite3_bind_int(get_links, 1, page_id);
-
+vector<tuple<int, string>> get_page_links(sqlite3_stmt* get_page, sqlite3_stmt* get_links, int page_id) {
+  vector<tuple<int, string>> child_ids;
 	int rc;
+
+  sqlite3_reset(get_links);
+	sqlite3_bind_int(get_links, 1, page_id);
 
 	do {
 		rc = sqlite3_step(get_links);
 
 		if (rc != SQLITE_ROW) break;
 
-		const unsigned char* temp_link_title = sqlite3_column_text(get_links, 0);
-		string link_title(reinterpret_cast<const char*>(temp_link_title));
-		link_titles.push_back(link_title);
+    int child_id;
+
+		string link_title(reinterpret_cast<const char*>(sqlite3_column_text(get_links, 0)));
+    string child_title;
+    get_page_data(get_page, link_title, &child_id, child_title, SQLITE_STATIC);
+
+    if (child_id != -1) child_ids.push_back(make_tuple (child_id, child_title));
 	} while (true);
+
+  return child_ids;
+}
+
+vector<tuple<int, string>> get_children(sqlite3_stmt* get_page, sqlite3_stmt* get_links, string title, sqlite3_destructor_type destructor = SQLITE_TRANSIENT) {
+	int page_id;
+	string page_title;
+
+	get_page_data(get_page, title, &page_id, page_title, destructor);
+
+	cout << "id: " << page_id << " title: " << page_title << endl;
+
+	return get_page_links(get_page, get_links, page_id);
 }
 
 int main(int argc, char* argv[]) {
@@ -45,7 +76,6 @@ int main(int argc, char* argv[]) {
 
 	sqlite3_stmt* get_page;
 	sqlite3_stmt* get_links;
-	const char* tail;
 
 	rc_page = sqlite3_open("../../testDb/enwikibooks-20191001-page.db", &db_page);
 	rc_pagelinks = sqlite3_open("../../testDb/enwikibooks-20191001-pagelinks.db", &db_pagelinks);
@@ -69,23 +99,16 @@ int main(int argc, char* argv[]) {
 		cout << "To: " << argv[2] << endl;
 	}
 
-	sqlite3_prepare_v2(db_page, "SELECT page_id,page_title FROM page WHERE page_title=?1", -1, &get_page, &tail);
-	sqlite3_prepare_v2(db_pagelinks, "SELECT pl_title FROM pagelinks WHERE pl_from=?", -1, &get_links, &tail);
+	sqlite3_prepare_v2(db_page, "SELECT page_id,page_title FROM page WHERE page_title=?1", -1, &get_page, 0);
+	sqlite3_prepare_v2(db_pagelinks, "SELECT pl_title FROM pagelinks WHERE pl_from=?", -1, &get_links, 0);
 
-	cout << sqlite3_bind_parameter_count(get_page) << endl;
-
-	int page_id;
-	const unsigned char* page_title;
-
-	get_page_data(get_page, argv[1], &page_id, &page_title, SQLITE_STATIC);
-
-	cout << "Int: " << page_id << " title: " << page_title << endl;
-
-	vector<string> link_titles;
-	get_page_links(get_links, page_id, link_titles);
-	cout << "s" << link_titles.size() << endl;
-	for (int i = 0; i < link_titles.size(); i++) {
-		cout << "Link: " << link_titles[i] << endl;
+  vector<tuple<int, string>> children = get_children(get_page, get_links, argv[1], SQLITE_STATIC);
+	cout << children.size() << " children" << endl;
+	for (int i = 0; i < children.size(); i++) {
+    int id;
+    string title;
+    tie (id, title) = children[i];
+		cout << "Link: " << id << " " << title << endl;
 	}
 
 	return 0;
