@@ -14,6 +14,8 @@ typedef void (*sqlite3_destructor_type)(void*);
 
 using namespace std;
 
+int num_threads = 8;
+
 struct page {
   int id;
   string title;
@@ -128,11 +130,10 @@ int main(int argc, char* argv[]) {
     vector<string> children = get_child_titles(get_page, get_links, v->id);
     int len = children.size();
 
-    #pragma omp parallel for num_threads(2)
+    #pragma omp parallel for num_threads(num_threads)
     for (int i = 0; i < len; i++) {
-      cout << "theads: " << omp_get_num_threads() << endl;
       string child_title = children[i];
-      // cout << child_title << endl;
+      cout << "theads: " << omp_get_num_threads() << " " << child_title << endl;
       if (!t.search(child_title)) {
         t.insert(child_title);
 
