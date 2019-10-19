@@ -3,13 +3,24 @@
 #include <vector>
 #include <cstring>
 #include <tuple>
+#include <chrono>
+#include <omp.h>
 #include "sqlite3/sqlite3.h"
+#include "trie.hpp"
 
 typedef void (*sqlite3_destructor_type)(void*);
 #define SQLITE_STATIC      ((sqlite3_destructor_type)0)
 #define SQLITE_TRANSIENT   ((sqlite3_destructor_type)-1)
 
 using namespace std;
+
+int num_threads = 8;
+
+struct page {
+  int id;
+  string title;
+  page* parent;
+};
 
 void get_page_data(sqlite3_stmt* get_page, string title, int* page_id, string& page_title, sqlite3_destructor_type destructor = SQLITE_TRANSIENT) {
   sqlite3_reset(get_page);
@@ -32,8 +43,8 @@ void get_page_data(sqlite3_stmt* get_page, string title, int* page_id, string& p
 	page_title = temp_page_title;
 }
 
-vector<tuple<int, string>> get_page_links(sqlite3_stmt* get_page, sqlite3_stmt* get_links, int page_id) {
-  vector<tuple<int, string>> child_ids;
+vector<string> get_child_titles(sqlite3_stmt* get_page, sqlite3_stmt* get_links, int page_id) {
+  vector<string> child_titles;
 	int rc;
 
   sqlite3_reset(get_links);
@@ -41,33 +52,17 @@ vector<tuple<int, string>> get_page_links(sqlite3_stmt* get_page, sqlite3_stmt* 
 
 	do {
 		rc = sqlite3_step(get_links);
-
 		if (rc != SQLITE_ROW) break;
 
-    int child_id;
-
-		string link_title(reinterpret_cast<const char*>(sqlite3_column_text(get_links, 0)));
-    string child_title;
-    get_page_data(get_page, link_title, &child_id, child_title, SQLITE_STATIC);
-
-    if (child_id != -1) child_ids.push_back(make_tuple (child_id, child_title));
+		string child_title(reinterpret_cast<const char*>(sqlite3_column_text(get_links, 0)));
+    child_titles.push_back(child_title);
 	} while (true);
 
-  return child_ids;
-}
-
-vector<tuple<int, string>> get_children(sqlite3_stmt* get_page, sqlite3_stmt* get_links, string title, sqlite3_destructor_type destructor = SQLITE_TRANSIENT) {
-	int page_id;
-	string page_title;
-
-	get_page_data(get_page, title, &page_id, page_title, destructor);
-
-	cout << "id: " << page_id << " title: " << page_title << endl;
-
-	return get_page_links(get_page, get_links, page_id);
+  return child_titles;
 }
 
 int main(int argc, char* argv[]) {
+
 
 	sqlite3* db_page;
 	sqlite3* db_pagelinks;
@@ -94,22 +89,66 @@ int main(int argc, char* argv[]) {
 	if (argc != 3) {
 		cout << "Wrong amount of parameters" << endl;
 		return 2;
-	} else {
-		cout << "From: " << argv[1] << endl;
-		cout << "To: " << argv[2] << endl;
 	}
 
 	sqlite3_prepare_v2(db_page, "SELECT page_id,page_title FROM page WHERE page_title=?1", -1, &get_page, 0);
 	sqlite3_prepare_v2(db_pagelinks, "SELECT pl_title FROM pagelinks WHERE pl_from=?", -1, &get_links, 0);
 
-  vector<tuple<int, string>> children = get_children(get_page, get_links, argv[1], SQLITE_STATIC);
-	cout << children.size() << " children" << endl;
-	for (int i = 0; i < children.size(); i++) {
-    int id;
-    string title;
-    tie (id, title) = children[i];
-		cout << "Link: " << id << " " << title << endl;
-	}
+  page* source = new page();
+  get_page_data(get_page, argv[1], &(source->id), source->title, SQLITE_STATIC);
+  source->parent = NULL;
+  string target = argv[2];
 
-	return 0;
+  cout << source->title << " -> " << target << endl;
+
+  Trie t;
+  queue<page*> q;
+  
+  t.insert(source->title);
+  q.push(source);
+
+  // begin timing
+  auto start = std::chrono::system_clock::now();
+
+  while (!q.empty()) {
+    page* v = q.front();
+    q.pop();
+    // cout << v->title << " comp " << target << ": " << v->title.compare(target) << endl;
+    if (v->title.compare(target) == 0) {
+      page* current = v;
+      while (current != NULL) {
+        cout << current->id << " " << current->title << endl;
+        current = current->parent;
+      }
+      //stop timing  and display runtime
+  	  auto end = std::chrono::system_clock::now();
+  	  auto elapsed_seconds = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
+  	  std::cout << "\nruntime:" << elapsed_seconds.count() << " ms\n\n";
+      return 0;
+    }
+
+    vector<string> children = get_child_titles(get_page, get_links, v->id);
+    int len = children.size();
+
+    #pragma omp parallel for num_threads(num_threads)
+    for (int i = 0; i < len; i++) {
+      string child_title = children[i];
+      cout << "theads: " << omp_get_num_threads() << " " << child_title << endl;
+      if (!t.search(child_title)) {
+        t.insert(child_title);
+
+        page* child = new page();
+        get_page_data(get_page, child_title, &(child->id), child->title);
+        child->parent = v;
+        q.push(child);
+      }
+    }
+  }
+
+
+  
+
+  cout << "not found" << endl;
+
+  return 0;
 }
