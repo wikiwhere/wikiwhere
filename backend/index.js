@@ -23,8 +23,8 @@ const corsOptionsDelegate = (req, callback) => {
 
 app.use(cors(corsOptionsDelegate));
 
-const pageDbPath = process.env.PAGE_PATH || '../../testDb/enwikibooks-20191001-page.db';
-const pagelinksDbPath = process.env.PAGELINKS_PATH || '../../testDb/enwikibooks-20191001-pagelinks.db';
+const pageDbPath = process.env.PAGE_PATH || '../../testDb/simplewiki-page.db';
+const pagelinksDbPath = process.env.PAGELINKS_PATH || '../../testDb/simplewiki-pagelinks.db';
 
 const run = (cmd, args, options) => {
   let completed = false;
