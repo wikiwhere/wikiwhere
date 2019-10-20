@@ -107,6 +107,17 @@ async function search(article, depth, shouldReset, article2) {
     let newNodes, newLinks;
 
     const response = await fetch(url);
+    if (!response.ok) {
+      try {
+        alert('Error: ' + (await response.json()).msg);
+      } catch (e) {
+        alert('Error: ' + await response.text());
+      }
+
+      finishLoading();
+      return;
+    }
+
     const data = await response.json();
     console.log(data);
     shouldReset && (nodeSet = new Set());
