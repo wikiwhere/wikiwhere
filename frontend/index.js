@@ -2,9 +2,6 @@ let labelOffsetX = 6;
 let labelOffsetY = 3;
 let circleRadius = 5;
 
-let width = 960,
-    height = 600;
-
 let scale = d3.scaleOrdinal(d3.schemeCategory10);
 let color = (d) => scale(d.group);
 
@@ -19,88 +16,90 @@ let simulation = d3.forceSimulation(nodes)
     .force("y", d3.forceY());
 
 let resolveDiff = (newNodes) => {
-  newNodes = newNodes.filter((node) => !nodeSet.has(node.id));
-  newNodes.forEach((node) => nodeSet.add(node.id));
-  return newNodes;
+    newNodes = newNodes.filter((node) => !nodeSet.has(node.id));
+    newNodes.forEach((node) => nodeSet.add(node.id));
+    return newNodes;
 }
 
 let restart = (isHighlighted) => {
-  // Draw new nodes & links
-  link = d3.select(".links")
-      .selectAll("line")
-    .data(links)
-    .enter().insert("line")
-    .attr("style", (d) => `stroke:${isHighlighted(d) ? "red" : "rgb(153,153,153)"}`)
-    .attr("stroke-width", (d) => isHighlighted(d) ? 3 : 1);
+    // Draw new nodes & links
+    link = d3.select(".links")
+        .selectAll("line")
+        .data(links)
+        .enter().insert("line")
+        .attr("style", (d) => `stroke:${isHighlighted(d) ? "red" : "rgb(153,153,153)"}`)
+        .attr("stroke-width", (d) => isHighlighted(d) ? 3 : 1);
 
-  node = d3.select(".nodes")
-      .selectAll("g")
-      .data(nodes)
-      .enter().append("g")
-      .on("dblclick", (d) => { search(d.id, d.group, false) });
+    node = d3.select(".nodes")
+        .selectAll("g")
+        .data(nodes)
+        .enter().append("g")
+        .on("dblclick", (d) => {
+            search(d.id, d.group, false)
+        });
 
-  circles = node.insert("circle")
-    .attr("r", circleRadius)
-    .attr("fill", color)
-    .call(drag(simulation));
+    circles = node.insert("circle")
+        .attr("r", circleRadius)
+        .attr("fill", color)
+        .call(drag(simulation));
 
-  node = d3.select(".nodes")
-    .selectAll("g");
+    node = d3.select(".nodes")
+        .selectAll("g");
 
-  node.selectAll("text").remove();
-  node.append("title")
-    .text((d) => {
-        return d.id;
-    });
+    node.selectAll("text").remove();
+    node.append("title")
+        .text((d) => {
+            return d.id;
+        });
 
-  labels = node.append("text")
-    .text((d) => {
-        return d.id;
-    })
-    .attr("x", labelOffsetX)
-    .attr("y", labelOffsetY);
+    labels = node.append("text")
+        .text((d) => {
+            return d.id;
+        })
+        .attr("x", labelOffsetX)
+        .attr("y", labelOffsetY);
 
-  console.log(node);
-  
-  // Update simulation parameters
-  simulation.nodes(nodes);
-  simulation.force("link").links(links);
-  simulation.alpha(1).restart();
+    console.log(node);
+
+    // Update simulation parameters
+    simulation.nodes(nodes);
+    simulation.force("link").links(links);
+    simulation.alpha(1).restart();
 }
 
 const startLoading = () => {
-  document.getElementById("overlay").style.display = "block";
-  setTimeout(() => {
-    document.getElementById("overlay").style.opacity = 1;
-  }, 10);
+    document.getElementById("overlay").style.display = "block";
+    setTimeout(() => {
+        document.getElementById("overlay").style.opacity = 1;
+    }, 10);
 };
 
 const finishLoading = () => {
-  document.getElementById("overlay").style.opacity = 0;
-  setTimeout(() => {
-    document.getElementById("overlay").style.display = "none";
-  }, 500);
+    document.getElementById("overlay").style.opacity = 0;
+    setTimeout(() => {
+        document.getElementById("overlay").style.display = "none";
+    }, 500);
 };
 
-async function search (article, depth, shouldReset, article2) {
-  // Get and set new nodes & links
+async function search(article, depth, shouldReset, article2) {
+    // Get and set new nodes & links
 
-  startLoading();
+    startLoading();
 
-  const base = "https://wikiwhere.org/api";
-  const childUrl = `${base}/children?source=${article}&group=${depth}`;
-  const pathUrl = `${base}/path?source=${article}&target=${article2}`;
-  const url = article2 ? pathUrl : childUrl;
-  
-  let newNodes, newLinks;
-  
-  const response = await fetch(url);
-  const data = await response.json();
-  console.log(data);
-  newNodes = resolveDiff(data.nodes);
-  newLinks = data.links;
-  console.log(newNodes);
-  console.log(newLinks);
+    const base = "https://wikiwhere.org/api";
+    const childUrl = `${base}/children?source=${article}&group=${depth}`;
+    const pathUrl = `${base}/path?source=${article}&target=${article2}`;
+    const url = article2 ? pathUrl : childUrl;
+
+    let newNodes, newLinks;
+
+    const response = await fetch(url);
+    const data = await response.json();
+    console.log(data);
+    newNodes = resolveDiff(data.nodes);
+    newLinks = data.links;
+    console.log(newNodes);
+    console.log(newLinks);
 //  newNodes = [
 //    { id: "Article 1", group: 1 },
 //    { id: "Article 2", group: 2 },
@@ -112,50 +111,51 @@ async function search (article, depth, shouldReset, article2) {
 //    { source: "Article 3", target: "Article 2" },
 //    { source: "Article 4", target: "Article 1" },
 //  ];
-  
-  shouldReset && (nodeSet = new Set());
-  nodes = shouldReset ? newNodes : [...nodes, ...newNodes];
-  links = shouldReset ? newLinks : [...links, ...newLinks];
 
-  let isHighlighted = (d) => false;
+    shouldReset && (nodeSet = new Set());
+    nodes = shouldReset ? newNodes : [...nodes, ...newNodes];
+    links = shouldReset ? newLinks : [...links, ...newLinks];
 
-  if (data.hasOwnProperty("path")) {
-    const path = new Map();
+    let isHighlighted = (d) => false;
 
-    data.path.forEach((p, i) => {
-      path.set(p, i);
-    });
+    if (data.hasOwnProperty("path")) {
+        const path = new Map();
 
-    isHighlighted = (d) => d && path.has(d.source) && d.target === data.path[path.get(d.source) + 1];
-  }
+        data.path.forEach((p, i) => {
+            path.set(p, i);
+        });
 
-  restart(isHighlighted);
+        isHighlighted =
+            (d) => d && path.has(d.source) && d.target === data.path[path.get(d.source) + 1];
+    }
 
-  finishLoading();
+    restart(isHighlighted);
+
+    finishLoading();
 };
 
 let ticked = () => {
-  node = d3.select(".nodes")
-      .selectAll("g");
+    node = d3.select(".nodes")
+        .selectAll("g");
 
-  link = d3.select(".links")
-      .selectAll("line");
+    link = d3.select(".links")
+        .selectAll("line");
 
-  link
-      .attr("x1", d => d.source.x)
-      .attr("y1", d => d.source.y)
-      .attr("x2", d => d.target.x)
-      .attr("y2", d => d.target.y);
+    link
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
 
-  node
-      .select("circle")
-      .attr("cx", d => d.x)
-      .attr("cy", d => d.y);
+    node
+        .select("circle")
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y);
 
-  node
-      .select("text")
-      .attr("x", d => d.x + labelOffsetX)
-      .attr("y", d => d.y + labelOffsetY);
+    node
+        .select("text")
+        .attr("x", d => d.x + labelOffsetX)
+        .attr("y", d => d.y + labelOffsetY);
 };
 
 drag = simulation => {
@@ -186,9 +186,21 @@ drag = simulation => {
         .on("drag", dragged)
         .on("end", dragEnded);
 };
-
-let svg = d3.select("svg")
-            .attr("viewBox", [-width / 2, -height / 2, width, height]);
+let searchBar = d3.select("#search_bar").node().getBoundingClientRect(),
+    view = d3.select("#search_bar").node().getBoundingClientRect()
+let width = view.width,
+    height = window.innerHeight - searchBar.height - 20;
+let svg = d3.select("#wikiwhere_view")
+    .append("svg")
+    .attr("viewBox",
+          [-width / 2, -height*2/3 / 2, width, height*2/3])
+    .attr("width", width)
+    .attr("height", height)
+    .call(d3.zoom().on("zoom", function () {
+        svg.attr("transform", d3.event.transform)
+    }))
+    .on("dblclick.zoom", null)
+    .append("g");
 
 let link = svg.append("g")
     .attr("class", "links")
@@ -203,7 +215,9 @@ let node = svg.append("g")
     .selectAll("g")
     .data(nodes)
     .enter().append("g")
-    .on("click", (e) => { console.log("click", e)});
+    .on("click", (e) => {
+        console.log("click", e)
+    });
 
 let circles = node.append("circle")
     .attr("r", circleRadius)
