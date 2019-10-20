@@ -18,7 +18,7 @@ typedef void (*sqlite3_destructor_type)(void*);
 using namespace std;
 using json = nlohmann::json;
 
-int num_threads = 8;
+int num_threads = 1;
 
 struct page {
   int id;

@@ -8,6 +8,7 @@ let color = (d) => scale(d.group);
 let links = [];
 let nodes = [];
 let nodeSet = new Set();
+let linkSet = new Set();
 
 let simulation = d3.forceSimulation(nodes)
     .force("link", d3.forceLink(links).id(d => d.id).distance(0).strength(0.5))
@@ -15,13 +16,22 @@ let simulation = d3.forceSimulation(nodes)
     .force("x", d3.forceX())
     .force("y", d3.forceY());
 
-let resolveDiff = (newNodes) => {
-  return newNodes.filter((node) => {
-    if (nodeSet.has(node.id)) return false;
+let resolveDiff = (newNodes, newLinks) => {
+  return [
+    newNodes.filter((node) => {
+      if (nodeSet.has(node.id)) return false;
 
-    nodeSet.add(node.id);
-    return true;
-  });
+      nodeSet.add(node.id);
+      return true;
+    }), 
+    newLinks.filter((link) => {
+      const key = `${link.source}-${link.target}`;
+      if (linkSet.has(key)) return false;
+
+      linkSet.add(key);
+      return true;
+    }),
+  ];
 }
 
 let restart = (isHighlighted) => {
@@ -100,8 +110,7 @@ async function search(article, depth, shouldReset, article2) {
     const data = await response.json();
     console.log(data);
     shouldReset && (nodeSet = new Set());
-    newNodes = resolveDiff(data.nodes);
-    newLinks = data.links;
+    [ newNodes, newLinks ] = resolveDiff(data.nodes, data.links);
     console.log(newNodes);
     console.log(newLinks);
 //  newNodes = [
