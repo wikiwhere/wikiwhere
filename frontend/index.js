@@ -7,7 +7,7 @@ let color = (d) => scale(d.group);
 
 let links = [];
 let nodes = [];
-let nodeSet = new Set([]);
+let nodeSet = new Set();
 
 let simulation = d3.forceSimulation(nodes)
     .force("link", d3.forceLink(links).id(d => d.id).distance(0).strength(0.5))
@@ -16,9 +16,12 @@ let simulation = d3.forceSimulation(nodes)
     .force("y", d3.forceY());
 
 let resolveDiff = (newNodes) => {
-    newNodes = newNodes.filter((node) => !nodeSet.has(node.id));
-    newNodes.forEach((node) => nodeSet.add(node.id));
-    return newNodes;
+  return newNodes.filter((node) => {
+    if (nodeSet.has(node.id)) return false;
+
+    nodeSet.add(node.id);
+    return true;
+  });
 }
 
 let restart = (isHighlighted) => {
