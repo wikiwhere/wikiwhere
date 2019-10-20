@@ -17,16 +17,19 @@ let data = {
     ]
 };
 
-let simulation = d3.forceSimulation()
-    .force("link", d3.forceLink({}).id(d => d.id))
-    .force("charge", d3.forceManyBody())
-    .force("center", d3.forceCenter(width / 2, height / 2));
+let svg = d3.select("svg")
+    .attr("viewBox", [-width / 2, -height / 2, width, height]);
 
-let svg = d3.select("svg");
+let nodes = [];
+let links = [];
 
-let nodes = data.nodes.map(d => Object.create(d)),
-    links = data.links.map(d => Object.create(d)),
-    link = svg.append("g")
+let simulation = d3.forceSimulation(nodes)
+    .force("link", d3.forceLink(links).id(d => d.id).distance(0).strength(1))
+    .force("charge", d3.forceManyBody().strength(-50))
+    .force("x", d3.forceX())
+    .force("y", d3.forceY());
+
+let link = svg.append("g")
         .attr("class","links")
         .selectAll("line"),
     node = svg.append("g")
@@ -44,7 +47,6 @@ let search = () => {
             group: 4
         }];
     let newLinks = [
-        {source: "Article 3", target: "Article 2"},
         {source: "Article 4", target: "Article 3"},
     ];
 
@@ -55,10 +57,10 @@ let search = () => {
 };
 
 let ticked = () => {
-    link = svg.select(".links")
+    link = d3.select(".links")
         .selectAll("line");
 
-    node = svg.select(".nodes")
+    node = d3.select(".nodes")
         .selectAll("g");
 
     link
@@ -142,6 +144,6 @@ let restart = () => {
 
     simulation.force("link")
         .links(links);
-}
+};
 
 restart();
