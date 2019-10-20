@@ -68,10 +68,25 @@ let restart = () => {
   simulation.alpha(1).restart();
 }
 
+const startLoading = () => {
+  document.getElementById("overlay").style.display = "block";
+  setTimeout(() => {
+    document.getElementById("overlay").style.opacity = 1;
+  }, 10);
+};
+
+const finishLoading = () => {
+  document.getElementById("overlay").style.opacity = 0;
+  setTimeout(() => {
+    document.getElementById("overlay").style.display = "none";
+  }, 500);
+};
+
 async function search (article, depth, shouldReset, article2) {
-  // Param: 1 is reset, 0 is update
   // Get and set new nodes & links
-  const Http = new XMLHttpRequest();
+
+  startLoading();
+
   const childUrl=`https://wikiwhere.org/api/children?source=${article}&group=${depth}`;
   const pathUrl=`https://wikiwhere.org/api/path?source=${article}&target=${article2}`;
   const url = article2 ? pathUrl : childUrl;
@@ -100,6 +115,8 @@ async function search (article, depth, shouldReset, article2) {
   links = shouldReset ? newLinks : [...links, ...newLinks];
 
   restart();
+
+  finishLoading();
 };
 
 let ticked = () => {

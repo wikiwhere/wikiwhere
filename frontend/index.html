@@ -2,6 +2,9 @@
 <meta charset="utf-8">
 <title>Wikiwhere</title>
 <style>
+    body {
+        font-family: sans-serif;
+    }
 
     .links line {
         stroke: #999;
@@ -14,9 +17,22 @@
     }
 
     text {
-        font-family: sans-serif;
         font-size: 10px;
         pointer-events: none;
+    }
+
+    #overlay {
+        width: 100vw;
+        height: 100vh;
+        background: rgba(255, 255, 255, 0.5);
+        position: fixed;
+        top: 0;
+        left: 0;
+        padding-top: 50vh;
+        text-align: center;
+        opacity: 0;
+        display: none;
+        transition: opacity 0.5s;
     }
 </style>
 <body>
@@ -34,6 +50,9 @@
     <div class="input-group-append">
       <button class="btn btn-outline-secondary" type="button" onClick='search(getElementById("articleSearch1").value, 1, true, getElementById("articleSearch2"))'>Path</button>
     </div>
+  </div>
+  <div id="overlay">
+    Loading...
   </div>
   <svg width="960" height="600"></svg>
 
