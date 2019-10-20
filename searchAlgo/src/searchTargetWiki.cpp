@@ -151,6 +151,7 @@ int main(int argc, char* argv[]) {
     int len = children.size();
     int level = atoi(argv[5]) + 1;
 
+    j["nodes"].push_back({{ "id", source->title }, { "group", level - 1 }});
     #pragma omp parallel for num_threads(num_threads)
     for (int i = 0; i < len; i++) {
       int id;
