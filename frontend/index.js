@@ -24,14 +24,14 @@ let resolveDiff = (newNodes) => {
   return newNodes;
 }
 
-let restart = () => {
+let restart = (stroke = "black", width = 1) => {
   // Draw new nodes & links
   link = d3.select(".links")
       .selectAll("line")
     .data(links)
     .enter().insert("line")
-    .attr("stroke", "black")
-    .attr("stroke-width", 1);
+    .attr("stroke", stroke)
+    .attr("stroke-width", width);
 
   node = d3.select(".nodes")
       .selectAll("g")
@@ -95,6 +95,7 @@ async function search (article, depth, shouldReset, article2) {
   
   const response = await fetch(url);
   const data = await response.json();
+  console.log(data);
   newNodes = resolveDiff(data.nodes);
   newLinks = data.links;
   console.log(newNodes);
@@ -110,13 +111,15 @@ async function search (article, depth, shouldReset, article2) {
 //    { source: "Article 3", target: "Article 2" },
 //    { source: "Article 4", target: "Article 1" },
 //  ];
-
+  
+  shouldReset && (nodeSet = new Set());
   nodes = shouldReset ? newNodes : [...nodes, ...newNodes];
   links = shouldReset ? newLinks : [...links, ...newLinks];
 
   restart();
 
   finishLoading();
+  article2 ? restart("red", 3) : restart();
 };
 
 let ticked = () => {
