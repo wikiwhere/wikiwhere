@@ -1,12 +1,11 @@
-let labelOffsetX = 6;
-let labelOffsetY = 3;
-let circleRadius = 5;
-
 let width = 960,
-    height = 600;
+    height = 500;
 
 let scale = d3.scaleOrdinal(d3.schemeCategory10);
-let color = (d) => scale(d.group);
+
+let labelOffsetX = 6,
+    labelOffsetY = 3,
+    circleRadius = 5;
 
 let data = {
     nodes: [
@@ -18,17 +17,21 @@ let data = {
     ]
 };
 
-let links = data.links.map(d => Object.create(d));
-let nodes = data.nodes.map(d => Object.create(d));
+let simulation = d3.forceSimulation()
+    .force("link", d3.forceLink({}).id(d => d.id))
+    .force("charge", d3.forceManyBody())
+    .force("center", d3.forceCenter(width / 2, height / 2));
 
-let restart = () => {
-    simulation
-        .nodes(nodes)
-        .on("tick", ticked);
+let svg = d3.select("svg");
 
-    simulation.force("link")
-        .links(links);
-};
+let nodes = data.nodes.map(d => Object.create(d)),
+    links = data.links.map(d => Object.create(d)),
+    link = svg.append("g")
+        .attr("class","links")
+        .selectAll("line"),
+    node = svg.append("g")
+        .attr("class", "nodes")
+        .selectAll("g");
 
 let search = () => {
     let newNodes = [
@@ -45,20 +48,19 @@ let search = () => {
         {source: "Article 4", target: "Article 3"},
     ];
 
-    nodes = [...nodes, ...newNodes];
-    links = [...links, ...newLinks];
-
-    let svg = d3.select("svg");
+    nodes = [...nodes, ...newNodes.map(d => Object.create(d))];
+    links = [...links, ...newLinks.map(d => Object.create(d))];
 
     restart();
 };
 
-let simulation = d3.forceSimulation(nodes)
-    .force("link", d3.forceLink(links).id(d => d.id))
-    .force("charge", d3.forceManyBody())
-    .force("center", d3.forceCenter(width / 2, height / 2));
-
 let ticked = () => {
+    link = svg.select(".links")
+        .selectAll("line");
+
+    node = svg.select(".nodes")
+        .selectAll("g");
+
     link
         .attr("x1", d => d.source.x)
         .attr("y1", d => d.source.y)
@@ -76,7 +78,7 @@ let ticked = () => {
         .attr("y", d => d.y + labelOffsetY);
 };
 
-drag = simulation => {
+let drag = simulation => {
 
     let dragStarted = (d) => {
         if (!d3.event.active) {
@@ -105,42 +107,41 @@ drag = simulation => {
         .on("end", dragEnded);
 };
 
-let svg = d3.select("svg");
+let color = (d) => scale(d.group);
 
-let link = svg.append("g")
-    .attr("class", "links")
-    .selectAll("line")
-    .data(links)
-    .enter().append("line")
-    .attr("stroke", "black")
-    .attr("stroke-width", 1);
+let restart = () => {
+    link = link.data(links);
 
-let node = svg.append("g")
-    .attr("class", "nodes")
-    .selectAll("g")
-    .data(nodes)
-    .enter().append("g");
+    link.enter().append("line")
+        .attr("stroke", "black")
+        .attr("stroke-width", 1);
 
-let circles = node.append("circle")
-    .attr("r", circleRadius)
-    .attr("fill", color)
-    .call(drag(simulation));
+    node = node.data(nodes)
+        .enter().append("g");
 
-let labels = node.append("text")
-    .text((d) => {
-        return d.id;
-    })
-    .attr("x", labelOffsetX)
-    .attr("y", labelOffsetY);
+    let circles = node.append("circle")
+        .attr("r", circleRadius)
+        .attr("fill", color)
+        .call(drag(simulation));
 
-node.append("title")
-    .text((d) => {
-        return d.id;
-    });
+    let labels = node.append("text")
+        .text((d) => {
+            return d.id;
+        })
+        .attr("x", labelOffsetX)
+        .attr("y", labelOffsetY);
 
-simulation
-    .nodes(nodes)
-    .on("tick", ticked);
+    node.append("title")
+        .text((d) => {
+            return d.id;
+        });
 
-simulation.force("link")
-    .links(links);
+    simulation
+        .nodes(nodes)
+        .on("tick", ticked);
+
+    simulation.force("link")
+        .links(links);
+}
+
+restart();
