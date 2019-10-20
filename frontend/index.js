@@ -24,14 +24,14 @@ let resolveDiff = (newNodes) => {
   return newNodes;
 }
 
-let restart = (stroke = "black", width = 1) => {
+let restart = (isHighlighted) => {
   // Draw new nodes & links
   link = d3.select(".links")
       .selectAll("line")
     .data(links)
     .enter().insert("line")
-    .attr("stroke", stroke)
-    .attr("stroke-width", width);
+    .attr("style", (d) => `stroke:${isHighlighted(d) ? "red" : "rgb(153,153,153)"}`)
+    .attr("stroke-width", (d) => isHighlighted(d) ? 3 : 1);
 
   node = d3.select(".nodes")
       .selectAll("g")
@@ -87,8 +87,9 @@ async function search (article, depth, shouldReset, article2) {
 
   startLoading();
 
-  const childUrl=`https://wikiwhere.org/api/children?source=${article}&group=${depth}`;
-  const pathUrl=`https://wikiwhere.org/api/path?source=${article}&target=${article2}`;
+  const base = "https://wikiwhere.org/api";
+  const childUrl = `${base}/children?source=${article}&group=${depth}`;
+  const pathUrl = `${base}/path?source=${article}&target=${article2}`;
   const url = article2 ? pathUrl : childUrl;
   
   let newNodes, newLinks;
@@ -116,10 +117,21 @@ async function search (article, depth, shouldReset, article2) {
   nodes = shouldReset ? newNodes : [...nodes, ...newNodes];
   links = shouldReset ? newLinks : [...links, ...newLinks];
 
-  restart();
+  let isHighlighted = (d) => false;
+
+  if (data.hasOwnProperty("path")) {
+    const path = new Map();
+
+    data.path.forEach((p, i) => {
+      path.set(p, i);
+    });
+
+    isHighlighted = (d) => d && path.has(d.source) && d.target === data.path[path.get(d.source) + 1];
+  }
+
+  restart(isHighlighted);
 
   finishLoading();
-  article2 ? restart("red", 3) : restart();
 };
 
 let ticked = () => {
