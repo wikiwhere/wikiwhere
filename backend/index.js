@@ -1,7 +1,27 @@
 const express = require('express');
+const cors = require('cors');
 const child_process = require('child_process');
 const path = require('path');
 const app = express();
+
+const corsOptionsDelegate = (req, callback) => {
+  let corsOptions = {
+    origin: false,
+    credentials: true,
+  };
+
+  const whitelist = [
+    process.env.URL || 'http://localhost:5000',
+  ];
+
+  if (process.env.NODE_ENV !== 'production' || whitelist.indexOf(req.header('Origin')) !== -1) {
+    corsOptions.origin = true; // reflect (enable) the requested origin in the CORS response
+  }
+
+  callback(null, corsOptions); // callback expects two parameters: error and options
+};
+
+app.use(cors(corsOptionsDelegate));
 
 const pageDbPath = process.env.PAGE_PATH || '../../testDb/enwikibooks-20191001-page.db';
 const pagelinksDbPath = process.env.PAGELINKS_PATH || '../../testDb/enwikibooks-20191001-pagelinks.db';
