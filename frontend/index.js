@@ -99,6 +99,7 @@ async function search(article, depth, shouldReset, article2) {
     const response = await fetch(url);
     const data = await response.json();
     console.log(data);
+    shouldReset && (nodeSet = new Set());
     newNodes = resolveDiff(data.nodes);
     newLinks = data.links;
     console.log(newNodes);
@@ -115,7 +116,6 @@ async function search(article, depth, shouldReset, article2) {
 //    { source: "Article 4", target: "Article 1" },
 //  ];
 
-    shouldReset && (nodeSet = new Set());
     nodes = shouldReset ? newNodes : [...nodes, ...newNodes];
     links = shouldReset ? newLinks : [...links, ...newLinks];
 
