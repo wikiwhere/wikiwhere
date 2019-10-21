@@ -16,7 +16,7 @@ let simulation = d3.forceSimulation(nodes)
     .force("x", d3.forceX())
     .force("y", d3.forceY());
 
-let resolveDiff = (newNodes, newLinks) => {
+let resolveDiff = (newNodes = [], newLinks = []) => {
   return [
     newNodes.filter((node) => {
       if (nodeSet.has(node.id)) return false;
@@ -36,6 +36,7 @@ let resolveDiff = (newNodes, newLinks) => {
 
 let restart = (isHighlighted) => {
     // Draw new nodes & links
+    d3.select(".links").selectAll("line").remove();
     link = d3.select(".links")
         .selectAll("line")
         .data(links)
@@ -43,6 +44,7 @@ let restart = (isHighlighted) => {
         .attr("style", (d) => `stroke:${isHighlighted(d) ? "red" : "rgb(153,153,153)"}`)
         .attr("stroke-width", (d) => isHighlighted(d) ? 3 : 1);
 
+    d3.select(".nodes").selectAll("g").remove();
     node = d3.select(".nodes")
         .selectAll("g")
         .data(nodes)
@@ -59,7 +61,6 @@ let restart = (isHighlighted) => {
     node = d3.select(".nodes")
         .selectAll("g");
 
-    node.selectAll("text").remove();
     node.append("title")
         .text((d) => {
             return d.id;
@@ -120,10 +121,14 @@ async function search(article, depth, shouldReset, article2) {
 
     const data = await response.json();
     console.log(data);
-    shouldReset && (nodeSet = new Set());
+    if (shouldReset) {
+        nodeSet = new Set();
+        linkSet = new Set();
+    }
+
     [ newNodes, newLinks ] = resolveDiff(data.nodes, data.links);
-    console.log(newNodes);
-    console.log(newLinks);
+    console.log(JSON.parse(JSON.stringify(newNodes)));
+    console.log(JSON.parse(JSON.stringify(newLinks)));
 //  newNodes = [
 //    { id: "Article 1", group: 1 },
 //    { id: "Article 2", group: 2 },
@@ -137,7 +142,7 @@ async function search(article, depth, shouldReset, article2) {
 //  ];
 
     nodes = shouldReset ? newNodes : [...nodes, ...newNodes];
-    links = shouldReset ? newLinks : [...links, ...newLinks];
+    links = shouldReset ? newLinks : [...(links.map(l => ({source: l.source.id, target: l.target.id }))), ...newLinks];
 
     let isHighlighted = (d) => false;
 
@@ -153,7 +158,6 @@ async function search(article, depth, shouldReset, article2) {
     }
 
     restart(isHighlighted);
-
     finishLoading();
 };
 
