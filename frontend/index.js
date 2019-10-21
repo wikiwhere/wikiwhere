@@ -34,6 +34,18 @@ let resolveDiff = (newNodes = [], newLinks = []) => {
   ];
 }
 
+const autocomplete = async (query) => {
+  const response = await fetch(`https://simple.wikipedia.org/w/api.php?action=opensearch&search=${query}&limit=3&origin=*`);
+  if (!response.ok) {
+    alert('Error: ' + await response.text());
+
+    return;
+  }
+
+  const data = await response.json();
+  return data[1].map(t => t.replace(/ /g, "_"));
+};
+
 let restart = (isHighlighted) => {
     // Draw new nodes & links
     d3.select(".links").selectAll("line").remove();
@@ -63,12 +75,12 @@ let restart = (isHighlighted) => {
 
     node.append("title")
         .text((d) => {
-            return d.id;
+            return d.id.replace(/_/g, " ");
         });
 
     labels = node.append("text")
         .text((d) => {
-            return d.id;
+            return d.id.replace(/_/g, " ");
         })
         .attr("x", labelOffsetX)
         .attr("y", labelOffsetY);
@@ -110,7 +122,22 @@ async function search(article, depth, shouldReset, article2) {
     const response = await fetch(url);
     if (!response.ok) {
       try {
-        alert('Error: ' + (await response.json()).msg);
+        const error = (await response.json()).msg;
+
+        let msg = error;
+
+        if (error.endsWith('page does not exist.')) {
+          const query = document.getElementById(error.startsWith("Source") ? "articleSearch1" : "articleSearch2").value;
+          if (query) {
+            try {
+              const suggestions = await autocomplete(query);
+              msg += `\n\nDid you mean (enter exactly):\n${suggestions.join("\n")}`;
+            } catch (e) {
+              console.log(e);
+            }
+          }
+        }
+        alert(`Error: ${msg}`);
       } catch (e) {
         alert('Error: ' + await response.text());
       }
@@ -260,7 +287,7 @@ let labels = node.append("text")
 
 node.append("title")
     .text((d) => {
-        return d.id;
+        return d.id.replace(/_/g, " ");
     });
 simulation
     .nodes(nodes)
