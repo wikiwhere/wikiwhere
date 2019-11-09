@@ -1,9 +1,9 @@
 let toggleHelp = () => {
-  let help = document.getElementsByClassName("help")[0];
-  if (help.style.display === "none") {
-    help.style.display = "block";
-  } else {
+  let help = document.getElementsByClassName("modal")[0];
+  if (help.style.display === "block") {
     help.style.display = "none";
+  } else {
+    help.style.display = "block";
   }
 }
 
@@ -304,3 +304,14 @@ simulation
 
 simulation.force("link")
     .links(links);
+
+const clearData = () => {
+    d3.select(".links").selectAll("line").remove();
+    d3.select(".nodes").selectAll("g").remove();
+    links = [];
+    nodes = [];
+    nodeSet = new Set();
+    linkSet = new Set();
+    document.getElementById("articleSearch1").value = '';
+    document.getElementById("articleSearch2").value = '';
+}

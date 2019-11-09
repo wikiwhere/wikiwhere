@@ -1,10 +1,19 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<link href="https://fonts.googleapis.com/css?family=Palanquin:700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css?family=Palanquin:700|Roboto|Roboto+Mono&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
 <title>Wikiwhere</title>
 <style>
+
+    html, body {
+        overflow: hidden;
+    }
+
     body {
-      font-family: sans-serif;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 14px;
       margin: 0;
     }
 
@@ -15,7 +24,7 @@
     }
 
     .form-control{
-      border: 3px solid #00000064;
+      border: 1px solid #00000048;
       border-right: none;
       padding: 5px;
       height: 20px;
@@ -48,16 +57,20 @@
 
     .btn {
         width: 40px;
-        height: 36px;
-        border: 3px solid #00000064;
-        background: solid #00000064;
+        height: 32px;
+        border: 1px solid #00000048;
+        background: solid #00000048;
         outline: none;
         text-align: center;
-        color: #fff;
+        /*color: #fff;*/
         border-left: none;
         border-radius: 0 5px 5px 0;
         cursor: pointer;
         font-size: 20px;
+    }
+
+    .fa-search {
+        color: #00000064;
     }
 
     .links line {
@@ -81,13 +94,15 @@
 
     h1 {
       font-family: 'Palanquin', sans-serif;
+      color: #000000AA;
       margin: 0px;
       margin-right: 30px;
       margin-left: 30px;
     }
 
-    h2 {
+    h2, h3 {
       font-family: 'Palanquin', sans-serif;
+      margin: 0;
     }
 
     text {
@@ -109,30 +124,94 @@
         transition: opacity 0.5s;
         z-index: 999;
     }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgb(0,0,0);
+      background-color: rgba(0,0,0,0.4);
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      margin: 15% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+    }
+
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .close:hover,.close:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    #helpButton {
+      position: absolute;
+      right: 3%;
+      bottom: 5%;
+      border-radius: 100%;
+      font-size: 24px;
+      font-family: 'Roboto Mono', monospace;
+      background-color: white;
+      border: none;
+      box-shadow: 0 3px 4px 0 rgba(0,0,0,0.24), 0 1px 1px 0 rgba(0,0,0,0.19);
+    }
+
+  #clear {
+    padding: 5px 10px 5px 10px;
+    position: absolute;
+    left: 3%;
+    bottom: 5%;
+    border-radius: 8px;
+    font-size: 16px;
+    font-family: 'Roboto';
+    background-color: white;
+    border: none;
+    box-shadow: 0 3px 4px 0 rgba(0,0,0,0.24), 0 1px 1px 0 rgba(0,0,0,0.19);
+  }
+
+  #clear:hover, #helpButton:hover {
+    cursor: pointer;
+    transition-duration: 0.1s;
+    box-shadow: 0 6px 8px 0 rgba(0,0,0,0.24), 0 3px 3px 0 rgba(0,0,0,0.19);
+  }
 </style>
 <body>
 <script src="https://d3js.org/d3.v5.min.js"></script>
 
 <div id="top">
-<div>
-  <h1>Wikiwhere</h1>
-  <button onClick="toggleHelp()">?</button>
-</div>
-<div id="search_bar" class="input-group mb-3">
-    <div id="search-container-1">
-        <input type="text" class="form-control" placeholder="Search an article..."
-               aria-label="Article Search" aria-describedby="button-addon2" id="articleSearch1">
-        <button class="btn btn-outline-secondary" type="button"
-                onClick='search(getElementById("articleSearch1").value, 1, false)'><i class="fa fa-search"></i></button>
-    </div>
+  <div>
+    <h1>Wikiwhere</h1>
+  </div>
+  <div id="search_bar" class="input-group mb-3">
+      <div id="search-container-1">
+          <input type="text" class="form-control" placeholder="Search an article..."
+                 aria-label="Article Search" aria-describedby="button-addon2" id="articleSearch1">
+          <button class="btn btn-outline-secondary" type="button"
+                  onClick='search(getElementById("articleSearch1").value, 1, false)'><i class="fa fa-search"></i></button>
+      </div>
 
-    <div id="search-container-2">
-        <input type="text" class="form-control" placeholder="Search an article..."
-               aria-label="Article Search" aria-describedby="button-addon2" id="articleSearch2">
-        <button class="btn btn-outline-secondary" type="button"
-                onClick='search(getElementById("articleSearch2").value, 1, false); search(getElementById("articleSearch1").value, 1, false, getElementById("articleSearch2").value)'><i class="fa fa-search"></i></button>
-    </div>
-</div>
+      <div id="search-container-2">
+          <input type="text" class="form-control" placeholder="Find a path..."
+                 aria-label="Article Search" aria-describedby="button-addon2" id="articleSearch2">
+          <button class="btn btn-outline-secondary" type="button"
+                  onClick='search(getElementById("articleSearch2").value, 1, false); search(getElementById("articleSearch1").value, 1, false, getElementById("articleSearch2").value)'><span class="fa fa-search"></span></button>
+      </div>
+  </div>
 </div>
 <div id="overlay">
     Loading...
@@ -141,4 +220,22 @@
 <div id="wikiwhere_view">
     <script src="index.js"></script>
 </div>
+<div id="help" class="modal">
+  <div class="modal-content">
+    <span class="close" onClick="toggleHelp()">&times;</span>
+    <h2>Info</h2>
+    <h3>About</h3>
+    <p>Wikiwhere is a tool meant to visualize relations between Wikipedia articles via links using directed graphs. It can both update relations on the fly and find the shortest path between any two articles.</p>
+    <h3>Usage</h3>
+    <ul>
+      <li>Type in the first search box and click the search icon to visualize a single article and its relations/update the current graph.</li>
+      <li>Double click on any node to see that node's relations.</li>
+      <li>Type in both the first and second search boxes and click the search in the second box to search for a route between two articles.</li>
+      <li>Hover over a node to see its descripton.</li>
+      <li>Click the clear button to clear the current visualization.</li>
+    </ul>
+  </div>
+</div>
+<button id="helpButton" onClick="toggleHelp()">?</button>
+<button id="clear" onClick="clearData()"> Clear </button>
 </body>
