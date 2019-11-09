@@ -69,13 +69,13 @@
         <input type="text" class="form-control" placeholder="Search an article..."
                aria-label="Article Search" aria-describedby="button-addon2" id="articleSearch2">
         <button class="btn btn-outline-secondary" type="button"
-                onClick='search(getElementById("articleSearch2").value, 1, false)'>Search</button>
+                onClick='search(getElementById("articleSearch2").value, 1, false); search(getElementById("articleSearch1").value, 1, false, getElementById("articleSearch2").value)'>Search</button>
     </div>
-
+<!-- 
     <div class="input-group-append">
         <button class="btn btn-outline-secondary" type="button"
                 onClick='search(getElementById("articleSearch1").value, 1, false, getElementById("articleSearch2").value)'>Path</button>
-    </div>
+    </div> -->
 </div>
 <div id="overlay">
     Loading...
