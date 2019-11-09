@@ -8,11 +8,11 @@
 <style>
 
     html, body {
-        overflow: hidden;
+      overflow: hidden;
     }
 
     body {
-        font-family: sans-serif;
+      font-family: sans-serif;
     }
 
     .search {
@@ -28,11 +28,10 @@
       height: 20px;
       border-radius: 5px 0 0 5px;
       outline: none;
-/*      color: #9DBFAF;
-*/    }
+    }
 
     .form-control:focus{
-      color: #00B4CC;
+      color: #000000AA;
     }
 
     .form-control[valid-input=true] {
@@ -40,49 +39,48 @@
     }
 
     #search-container-1 {
-        display: flex;
-        justify-content: center;
-        margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      margin: 0 auto;
     }
 
     #search-container-2 {
-        display: flex;
-        justify-content: center;
-        margin: 0 auto;
-        margin-top: 10px;
+      display: flex;
+      justify-content: center;
+      margin: 0 auto;
+      margin-top: 10px;
     }
 
     #search_bar {
-        padding-top: 15px;
-        padding-bottom: 15px;
+      padding-top: 15px;
+      padding-bottom: 15px;
     }
 
     .btn {
-        width: 40px;
-        height: 32px;
-        border: 1px solid #00000048;
-        background: solid #00000048;
-        outline: none;
-        text-align: center;
-        /*color: #fff;*/
-        border-left: none;
-        border-radius: 0 5px 5px 0;
-        cursor: pointer;
-        font-size: 20px;
+      width: 40px;
+      height: 32px;
+      border: 1px solid #00000048;
+      background: solid #00000048;
+      outline: none;
+      text-align: center;
+      border-left: none;
+      border-radius: 0 5px 5px 0;
+      cursor: pointer;
+      font-size: 20px;
     }
 
     .fa-search {
-        color: #00000064;
+      color: #00000064;
     }
 
     .links line {
-        stroke: #999;
-        stroke-opacity: 0.6;
+      stroke: #999;
+      stroke-opacity: 0.6;
     }
 
     .nodes circle {
-        stroke: #fff;
-        stroke-width: 1.5px;
+      stroke: #fff;
+      stroke-width: 1.5px;
     }
 
     #top {
@@ -164,14 +162,14 @@
     <div id="search-container-1">
         <input type="text" class="form-control" placeholder="Search an article..."
                aria-label="Article Search" aria-describedby="button-addon2" id="articleSearch1">
-        <button class="btn btn-outline-secondary" type="button"
+        <button class="btn btn-outline-secondary" type="button" id="btn1"
                 onClick='search(getElementById("articleSearch1").value, 1, false)'><i class="fa fa-search"></i></button>
     </div>
 
     <div id="search-container-2">
         <input type="text" class="form-control" placeholder="Search an article..."
                aria-label="Article Search" aria-describedby="button-addon2" id="articleSearch2">
-        <button class="btn btn-outline-secondary" type="button"
+        <button class="btn btn-outline-secondary" type="button" id="btn2"
                 onClick='search(getElementById("articleSearch2").value, 1, false); search(getElementById("articleSearch1").value, 1, false, getElementById("articleSearch2").value)'><span class="fa fa-search"></span></button>
     </div>
 <!--
