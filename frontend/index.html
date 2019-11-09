@@ -49,6 +49,10 @@
       margin-left: 30px;
     }
 
+    h2 {
+      font-family: 'Palanquin', sans-serif;
+    }
+
     text {
         font-size: 10px;
         pointer-events: none;
@@ -68,6 +72,10 @@
         transition: opacity 0.5s;
         z-index: 999;
     }
+
+    .help {
+      margin-top: 20px;
+    }
 </style>
 <body>
 <script src="https://d3js.org/d3.v5.min.js"></script>
@@ -77,7 +85,6 @@
   <h1>Wikiwhere</h1>
 </div>
 <div id="search_bar" class="input-group mb-3">
-
     <div id="search-container-1">
         <input type="text" class="form-control" placeholder="Search an article..."
                aria-label="Article Search" aria-describedby="button-addon2" id="articleSearch1">
@@ -97,6 +104,9 @@
                 onClick='search(getElementById("articleSearch1").value, 1, false, getElementById("articleSearch2").value)'>Path</button>
     </div> -->
 </div>
+</div>
+<div class="help">
+  <h2> About </h2>
 </div>
 <div id="overlay">
     Loading...
