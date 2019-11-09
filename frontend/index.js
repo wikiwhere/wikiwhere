@@ -295,3 +295,14 @@ simulation
 
 simulation.force("link")
     .links(links);
+
+const clearData = () => {
+    d3.select(".links").selectAll("line").remove();
+    d3.select(".nodes").selectAll("g").remove();
+    links = [];
+    nodes = [];
+    nodeSet = new Set();
+    linkSet = new Set();
+    document.getElementById("articleSearch1").value = '';
+    document.getElementById("articleSearch2").value = '';
+}
