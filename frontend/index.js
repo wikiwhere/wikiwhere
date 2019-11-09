@@ -240,8 +240,8 @@ drag = simulation => {
         .on("drag", dragged)
         .on("end", dragEnded);
 };
-let searchBar = d3.select("#search_bar").node().getBoundingClientRect(),
-    view = d3.select("#search_bar").node().getBoundingClientRect()
+let searchBar = d3.select("body").node().getBoundingClientRect(),
+    view = d3.select("body").node().getBoundingClientRect()
 let width = view.width,
     height = window.innerHeight - searchBar.height - 20;
 let svg = d3.select("#wikiwhere_view")
