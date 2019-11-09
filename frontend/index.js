@@ -110,6 +110,7 @@ const finishLoading = () => {
 async function search(article, depth, shouldReset, article2) {
     // Get and set new nodes & links
 
+  console.log('search', article, depth, shouldReset, article2);
     startLoading();
 
     const base = "https://wikiwhere.org/api";
@@ -311,15 +312,29 @@ const clearData = () => {
 
 let input1 = document.getElementById("articleSearch1");
 let input2 = document.getElementById("articleSearch2");
+let btn1 = document.getElementById("btn1");
+let btn2 = document.getElementById("btn2");
+
+btn1.addEventListener("click", function(event) {
+  search(input1.value, 1, false);
+});
+
+btn2.addEventListener("click", function(event) {
+  if (input1.value === '') {
+    search(input2.value, 1, false);
+  } else {
+    search(input1.value, 1, false, input2.value);
+  }
+});
 
 input1.addEventListener("keyup", function(event) {
   if (event.keyCode === 13) {   //Enter key
-    document.getElementById("btn1").click();
+    btn1.click();
   }
 });
 
 input2.addEventListener("keyup", function(event) {
     if (event.keyCode === 13) {
-      document.getElementById("btn2").click();
+      btn2.click();
     }
 });
