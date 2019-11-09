@@ -1,3 +1,12 @@
+let toggleHelp = () => {
+  let help = document.getElementsByClassName("modal")[0];
+  if (help.style.display === "block") {
+    help.style.display = "none";
+  } else {
+    help.style.display = "block";
+  }
+}
+
 let labelOffsetX = 6;
 let labelOffsetY = 3;
 let circleRadius = 5;
@@ -110,7 +119,6 @@ const finishLoading = () => {
 async function search(article, depth, shouldReset, article2) {
     // Get and set new nodes & links
 
-  console.log('search', article, depth, shouldReset, article2);
     startLoading();
 
     const base = "https://wikiwhere.org/api";
