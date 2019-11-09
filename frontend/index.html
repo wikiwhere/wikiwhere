@@ -93,8 +93,12 @@
       width: 100%;
       display: flex;
       justify-content: center;
+<<<<<<< HEAD
       background-color: rgba(255, 255, 255, 0.5);
       box-shadow: 0px 0.5px 3px #888;
+=======
+      align-items: center;
+>>>>>>> 266c837263cc91082b95a37f44bc0b892b4555f3
     }
 
     h1 {
@@ -231,6 +235,7 @@
 <script src="https://d3js.org/d3.v5.min.js"></script>
 
 <div id="top">
+<<<<<<< HEAD
   <div>
     <h1>Wikiwhere</h1>
   </div>
@@ -249,6 +254,36 @@
                   onClick='search(getElementById("articleSearch2").value, 1, false); search(getElementById("articleSearch1").value, 1, false, getElementById("articleSearch2").value)'><span class="fa fa-search"></span></button>
       </div>
   </div>
+=======
+<h1>Wikiwhere</h1>
+<div id="search_bar" class="input-group mb-3">
+
+    <div id="search-container-1">
+        <input type="text" class="form-control" placeholder="Search an article..."
+               aria-label="Article Search" aria-describedby="button-addon2" id="articleSearch1">
+        <button class="btn btn-outline-secondary" type="button" id="btn1"
+                onClick='search(getElementById("articleSearch1").value, 1, false)'><i class="fa fa-search"></i></button>
+    </div>
+
+    <div id="search-container-2">
+        <input type="text" class="form-control" placeholder="Search an article..."
+               aria-label="Article Search" aria-describedby="button-addon2" id="articleSearch2">
+        <button class="btn btn-outline-secondary" type="button" id="btn2"
+                onClick='search(getElementById("articleSearch2").value, 1, false); search(getElementById("articleSearch1").value, 1, false, getElementById("articleSearch2").value)'><span class="fa fa-search"></span></button>
+    </div>
+<!--
+    <div class="input-group-append">
+        <button class="btn btn-outline-secondary" type="button"
+                onClick='search(getElementById("articleSearch1").value, 1, false, getElementById("articleSearch2").value)'>Path</button>
+    </div>
+    <div class="input-group-append">
+        <button class="btn btn-outline-secondary" type="button"
+                onClick="clearData()">
+            Clear
+        </button>
+    </div> -->
+</div>
+>>>>>>> 266c837263cc91082b95a37f44bc0b892b4555f3
 </div>
 <div id="overlay">
     Loading...
