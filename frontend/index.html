@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css?family=Palanquin:700&display=swap" rel="stylesheet">
 <title>Wikiwhere</title>
 <style>
     body {
@@ -101,6 +102,20 @@ body{
         stroke-width: 1.5px;
     }
 
+    #top {
+      position: absolute;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    h1 {
+      font-family: 'Palanquin', sans-serif;
+      margin: 0px;
+      margin-right: 30px;
+      margin-left: 30px;
+    }
+
     text {
         font-size: 10px;
         pointer-events: none;
@@ -124,6 +139,10 @@ body{
 <body>
 <script src="https://d3js.org/d3.v5.min.js"></script>
 
+<div id="top">
+<div>
+  <h1>Wikiwhere</h1>
+</div>
 <div id="search_bar" class="input-group mb-3">
 
     <div id="search-container-1">
@@ -139,17 +158,18 @@ body{
         <button class="btn btn-outline-secondary" type="button"
                 onClick='search(getElementById("articleSearch2").value, 1, false); search(getElementById("articleSearch1").value, 1, false, getElementById("articleSearch2").value)'></button>
     </div>
-<!-- 
+<!--
     <div class="input-group-append">
         <button class="btn btn-outline-secondary" type="button"
                 onClick='search(getElementById("articleSearch1").value, 1, false, getElementById("articleSearch2").value)'>Path</button>
     </div> -->
 </div>
+</div>
 <div id="overlay">
     Loading...
 </div>
 </body>
-<div id="wikiwhere_view" style="outline: thin solid black;">
+<div id="wikiwhere_view">
     <script src="index.js"></script>
 </div>
 </body>
