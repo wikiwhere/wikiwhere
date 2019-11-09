@@ -6,22 +6,21 @@
 
 <title>Wikiwhere</title>
 <style>
+  html, body {
+    overflow: hidden;
+  }
 
-    html, body {
-        overflow: hidden;
-    }
+  body {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 14px;
+    margin: 0;
+  }
 
-    body {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 14px;
-      margin: 0;
-    }
-
-    .search {
-      width: 100%;
-      position: relative;
-      display: flex;
-    }
+  .search {
+    width: 100%;
+    position: relative;
+    display: flex;
+  }
 
     .form-control{
       border: 1px solid #00000048;
@@ -30,57 +29,63 @@
       height: 20px;
       border-radius: 5px 0 0 5px;
       outline: none;
-/*      color: #9DBFAF;
-*/    }
+    }
 
     .form-control:focus{
-      color: #00B4CC;
+      color: #000000AA;
+    }
+
+    .form-control[valid-input=false] {
+      background-color: #fff2f2;
+    }
+
+    .form-control:placeholder-shown {
+      background-color: #fff;
     }
 
     #search-container-1 {
-        display: flex;
-        justify-content: center;
-        margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      margin: 0 auto;
     }
 
     #search-container-2 {
-        display: flex;
-        justify-content: center;
-        margin: 0 auto;
-        margin-top: 10px;
+      display: flex;
+      justify-content: center;
+      margin: 0 auto;
+      margin-top: 10px;
     }
 
     #search_bar {
-        padding-top: 15px;
-        padding-bottom: 15px;
+      padding-top: 15px;
+      padding-bottom: 15px;
     }
 
     .btn {
-        width: 40px;
-        height: 32px;
-        border: 1px solid #00000048;
-        background: solid #00000048;
-        outline: none;
-        text-align: center;
-        /*color: #fff;*/
-        border-left: none;
-        border-radius: 0 5px 5px 0;
-        cursor: pointer;
-        font-size: 20px;
+      width: 40px;
+      height: 32px;
+      border: 1px solid #00000048;
+      background: solid #00000048;
+      outline: none;
+      text-align: center;
+      border-left: none;
+      border-radius: 0 5px 5px 0;
+      cursor: pointer;
+      font-size: 20px;
     }
 
     .fa-search {
-        color: #00000064;
+      color: #00000064;
     }
 
     .links line {
-        stroke: #999;
-        stroke-opacity: 0.6;
+      stroke: #999;
+      stroke-opacity: 0.6;
     }
 
     .nodes circle {
-        stroke: #fff;
-        stroke-width: 1.5px;
+      stroke: #fff;
+      stroke-width: 1.5px;
     }
 
     #top {
@@ -189,6 +194,38 @@
     transition-duration: 0.1s;
     box-shadow: 0 6px 8px 0 rgba(0,0,0,0.24), 0 3px 3px 0 rgba(0,0,0,0.19);
   }
+
+  #search_bar > div {
+    position: relative;
+  }
+
+    .autocomplete-items {
+      position: absolute;
+      border: 1px solid #d4d4d4;
+      border-bottom: none;
+      border-top: none;
+      z-index: 99;
+      top: 100%;
+      left: 0;
+      right: 0;
+      overflow: hidden;
+    }
+
+    .autocomplete-items div {
+      padding: 10px;
+      cursor: pointer;
+      background-color: #fff;
+      border-bottom: 1px solid #d4d4d4;
+    }
+
+    .autocomplete-items div:hover {
+      background-color: #e9e9e9;
+    }
+
+    .autocomplete-active {
+      background-color: #00B4CC !important;
+      color: #ffffff;
+    }
 </style>
 <body>
 <script src="https://d3js.org/d3.v5.min.js"></script>
@@ -219,6 +256,7 @@
 </body>
 <div id="wikiwhere_view">
     <script src="index.js"></script>
+    <script src="autocomplete.js"></script>
 </div>
 <div id="help" class="modal">
   <div class="modal-content">
@@ -230,7 +268,7 @@
     <ul>
       <li>Type in the first search box and click the search icon to visualize a single article and its relations/update the current graph.</li>
       <li>Double click on any node to see that node's relations.</li>
-      <li>Type in both the first and second search boxes and click the search in the second box to search for a route between two articles.</li>
+      <li>Type in both the first and second search boxes and click the search in the second box to search for a route between two articles (might take some time).</li>
       <li>Hover over a node to see its descripton.</li>
       <li>Click the clear button to clear the current visualization.</li>
     </ul>

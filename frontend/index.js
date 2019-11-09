@@ -315,3 +315,20 @@ const clearData = () => {
     document.getElementById("articleSearch1").value = '';
     document.getElementById("articleSearch2").value = '';
 }
+
+/*Press Enter to submit */
+
+let input1 = document.getElementById("articleSearch1");
+let input2 = document.getElementById("articleSearch2");
+
+input1.addEventListener("keyup", function(event) {
+  if (event.keyCode === 13) {   //Enter key
+    document.getElementById("btn1").click();
+  }
+});
+
+input2.addEventListener("keyup", function(event) {
+    if (event.keyCode === 13) {
+      document.getElementById("btn2").click();
+    }
+});
