@@ -1,9 +1,9 @@
 let toggleHelp = () => {
   let help = document.getElementsByClassName("modal")[0];
-  if (help.style.display === "block") {
+  if (help.style.display === "flex") {
     help.style.display = "none";
   } else {
-    help.style.display = "block";
+    help.style.display = "flex";
   }
 }
 
