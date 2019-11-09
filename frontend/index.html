@@ -126,14 +126,14 @@
     <div id="search-container-1">
         <input type="text" class="form-control" placeholder="Search an article..."
                aria-label="Article Search" aria-describedby="button-addon2" id="articleSearch1">
-        <button class="btn btn-outline-secondary" type="button"
+        <button class="btn btn-outline-secondary" type="button" id="btn1"
                 onClick='search(getElementById("articleSearch1").value, 1, false)'><i class="fa fa-search"></i></button>
     </div>
 
     <div id="search-container-2">
         <input type="text" class="form-control" placeholder="Search an article..."
                aria-label="Article Search" aria-describedby="button-addon2" id="articleSearch2">
-        <button class="btn btn-outline-secondary" type="button"
+        <button class="btn btn-outline-secondary" type="button" id="btn2"
                 onClick='search(getElementById("articleSearch2").value, 1, false); search(getElementById("articleSearch1").value, 1, false, getElementById("articleSearch2").value)'><span class="fa fa-search"></span></button>
     </div>
 <!--
