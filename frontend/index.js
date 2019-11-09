@@ -1,3 +1,12 @@
+let toggleHelp = () => {
+  let help = document.getElementsByClassName("help")[0];
+  if (help.style.display === "none") {
+    help.style.display = "block";
+  } else {
+    help.style.display = "none";
+  }
+}
+
 let labelOffsetX = 6;
 let labelOffsetY = 3;
 let circleRadius = 5;

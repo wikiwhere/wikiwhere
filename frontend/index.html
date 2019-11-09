@@ -4,7 +4,8 @@
 <title>Wikiwhere</title>
 <style>
     body {
-        font-family: sans-serif;
+      font-family: sans-serif;
+      margin: 0;
     }
 
     .search {
@@ -74,6 +75,8 @@
       width: 100%;
       display: flex;
       justify-content: center;
+      background-color: rgba(255, 255, 255, 0.5);
+      box-shadow: 0px 0.5px 3px #888;
     }
 
     h1 {
@@ -106,10 +109,6 @@
         transition: opacity 0.5s;
         z-index: 999;
     }
-
-    .help {
-      margin-top: 20px;
-    }
 </style>
 <body>
 <script src="https://d3js.org/d3.v5.min.js"></script>
@@ -117,6 +116,7 @@
 <div id="top">
 <div>
   <h1>Wikiwhere</h1>
+  <button onClick="toggleHelp()">?</button>
 </div>
 <div id="search_bar" class="input-group mb-3">
     <div id="search-container-1">
@@ -132,15 +132,7 @@
         <button class="btn btn-outline-secondary" type="button"
                 onClick='search(getElementById("articleSearch2").value, 1, false); search(getElementById("articleSearch1").value, 1, false, getElementById("articleSearch2").value)'><i class="fa fa-search"></i></button>
     </div>
-<!--
-    <div class="input-group-append">
-        <button class="btn btn-outline-secondary" type="button"
-                onClick='search(getElementById("articleSearch1").value, 1, false, getElementById("articleSearch2").value)'>Path</button>
-    </div> -->
 </div>
-</div>
-<div class="help">
-  <h2> About </h2>
 </div>
 <div id="overlay">
     Loading...
