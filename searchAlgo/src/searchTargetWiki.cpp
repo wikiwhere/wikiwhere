@@ -3,12 +3,8 @@
 #include <vector>
 #include <forward_list>
 #include <unordered_map>
-#include <cstring>
-#include <tuple>
-#include <chrono>
-#include <omp.h>
+#include <unordered_set>
 #include "sqlite3/sqlite3.h"
-#include "trie.hpp"
 #include "json.hpp"
 
 typedef void (*sqlite3_destructor_type)(void*);
@@ -18,19 +14,36 @@ typedef void (*sqlite3_destructor_type)(void*);
 using namespace std;
 using json = nlohmann::json;
 
-int num_threads = 1;
-
 struct page {
   int id;
   string title;
   page* parent;
 };
 
-void get_page_data(vector<sqlite3_stmt*> get_page_v, string title, int* page_id, string& page_title, sqlite3_destructor_type destructor = SQLITE_TRANSIENT) {
-  sqlite3_stmt* get_page = get_page_v[omp_get_thread_num()];
+void find_page_data(sqlite3_stmt* find_page, string title, int* page_id, string& page_title, sqlite3_destructor_type destructor = SQLITE_TRANSIENT) {
+  sqlite3_reset(find_page);
+  int rc = sqlite3_bind_text(find_page, 1, title.c_str(), -1, destructor);
+  if (rc) {
+    cout << "Bind failed " << rc << endl;
+  }
 
+  rc = sqlite3_step(find_page);
+  if (rc != SQLITE_ROW) {
+    if (page_id != 0) *page_id = -1;
+    page_title = "";
+
+    return;
+  }
+
+  string temp_page_title(reinterpret_cast<const char*>(sqlite3_column_text(find_page, 1)));
+
+  if (page_id != 0) *page_id = sqlite3_column_int64(find_page, 0);
+  page_title = temp_page_title;
+}
+
+void get_page_data(sqlite3_stmt* get_page, int id, int* page_id, string& page_title) {
   sqlite3_reset(get_page);
-  int rc = sqlite3_bind_text(get_page, 1, title.c_str(), -1, destructor);
+  int rc = sqlite3_bind_int(get_page, 1, id);
   if (rc) {
     cout << "Bind failed " << rc << endl;
   }
@@ -49,10 +62,8 @@ void get_page_data(vector<sqlite3_stmt*> get_page_v, string title, int* page_id,
   page_title = temp_page_title;
 }
 
-vector<string> get_child_titles(vector<sqlite3_stmt*> get_links_v, int page_id) {
-  sqlite3_stmt* get_links = get_links_v[omp_get_thread_num()];
-
-  vector<string> child_titles;
+vector<int> get_child_ids(sqlite3_stmt* get_links, int page_id) {
+  vector<int> child_ids;
   int rc;
 
   sqlite3_reset(get_links);
@@ -62,11 +73,11 @@ vector<string> get_child_titles(vector<sqlite3_stmt*> get_links_v, int page_id) 
     rc = sqlite3_step(get_links);
     if (rc != SQLITE_ROW) break;
 
-    string child_title(reinterpret_cast<const char*>(sqlite3_column_text(get_links, 0)));
-    child_titles.push_back(child_title);
+    int child_id = sqlite3_column_int64(get_links, 0);
+    child_ids.push_back(child_id);
   } while (true);
 
-  return child_titles;
+  return child_ids;
 }
 
 int main(int argc, char* argv[]) {
@@ -91,7 +102,7 @@ int main(int argc, char* argv[]) {
     json output;
     output["status"] = 500;
     string msg =  "Can't open database: ";
-    msg.append(sqlite3_errmsg(db_pagelinks));
+    msg.append(sqlite3_errmsg(db_page));
     output["data"]["msg"] = msg;
     cout << output.dump() << endl;
     return 1;
@@ -117,22 +128,16 @@ int main(int argc, char* argv[]) {
     return 2;
   }
 
-  vector<sqlite3_stmt*> get_page;
-  vector<sqlite3_stmt*> get_links;
+  sqlite3_stmt* find_page;
+  sqlite3_stmt* get_page;
+  sqlite3_stmt* get_links;
 
-  for (int i = 0; i < num_threads; i++) {
-    sqlite3_stmt* temp_get_page;
-    sqlite3_stmt* temp_get_links;
-
-    sqlite3_prepare_v2(db_page, "SELECT page_id,page_title FROM page WHERE page_namespace=0 AND page_title=?1", -1, &temp_get_page, 0);
-    sqlite3_prepare_v2(db_pagelinks, "SELECT pl_title FROM pagelinks WHERE pl_namespace=0 AND pl_from_namespace=0 AND pl_from=?", -1, &temp_get_links, 0);
-
-    get_page.push_back(temp_get_page);
-    get_links.push_back(temp_get_links);
-  }
+  sqlite3_prepare_v2(db_page, "SELECT page_id,page_title FROM page WHERE page_namespace=0 AND page_title=?1", -1, &find_page, 0);
+  sqlite3_prepare_v2(db_page, "SELECT page_id,page_title FROM page WHERE page_id=?1", -1, &get_page, 0);
+  sqlite3_prepare_v2(db_pagelinks, "SELECT pl_to FROM pagelinks WHERE pl_from=?", -1, &get_links, 0);
 
   page* source = new page();
-  get_page_data(get_page, argv[4], &(source->id), source->title, SQLITE_STATIC);
+  find_page_data(find_page, argv[4], &(source->id), source->title, SQLITE_STATIC);
 
   if (source->id == -1) {
     json output;
@@ -145,22 +150,21 @@ int main(int argc, char* argv[]) {
   source->parent = NULL;
 
   if (command == "children") {
-    vector<string> children = get_child_titles(get_links, source->id);
+    vector<int> children = get_child_ids(get_links, source->id);
 
     json j;
     int len = children.size();
     int level = atoi(argv[5]) + 1;
 
     j["nodes"].push_back({{ "id", source->title }, { "group", level - 1 }});
-    #pragma omp parallel for num_threads(num_threads)
     for (int i = 0; i < len; i++) {
       int id;
-      string ignored;
+      string title;
 
-      get_page_data(get_page, children[i], &id, ignored);
+      get_page_data(get_page, children[i], &id, title);
       if (id != -1) {
-        j["nodes"].push_back({{ "id", children[i] }, { "group", level }});
-        j["links"].push_back({{ "source", source->title }, { "target", children[i] }});
+        j["nodes"].push_back({{ "id", title }, { "group", level }});
+        j["links"].push_back({{ "source", source->title }, { "target", title }});
       }
     }
 
@@ -174,7 +178,7 @@ int main(int argc, char* argv[]) {
   string target = argv[5];
 
   int target_id;
-  get_page_data(get_page, target, &target_id, target, SQLITE_STATIC);
+  find_page_data(find_page, target, &target_id, target, SQLITE_STATIC);
   if (target_id == -1) {
     json output;
     output["status"] = 400;
@@ -185,24 +189,16 @@ int main(int argc, char* argv[]) {
 
   // cout << source->title << " -> " << target << endl;
 
-  Trie t;
+  unordered_set<int> t;
   queue<page*> q;
   
-  t.insert(source->title);
+  t.insert(source->id);
   q.push(source);
-
-  // begin timing
-  auto start = std::chrono::system_clock::now();
 
   while (!q.empty()) {
     page* v = q.front();
     q.pop();
     if (v->title.compare(target) == 0) {
-      //stop timing  and display runtime
-      auto end = std::chrono::system_clock::now();
-      auto elapsed_seconds = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
-      // std::cout << "\nruntime:" << elapsed_seconds.count() << " ms\n\n";
-
       page* current = v;
 
       forward_list<page*> path;
@@ -225,19 +221,18 @@ int main(int argc, char* argv[]) {
         }
 
         group++;
-        vector<string> children = get_child_titles(get_links, (*it)->id);
+        vector<int> children = get_child_ids(get_links, (*it)->id);
         int len = children.size();
 
-        #pragma omp parallel for num_threads(num_threads)
         for (int i = 0; i < len; i++) {
           int id;
-          string ignored;
+          string title;
 
-          get_page_data(get_page, children[i], &id, ignored);
+          get_page_data(get_page, children[i], &id, title);
           if (id != -1) {
-            j["links"].push_back({{ "source", (*it)->title }, { "target", children[i] }});
-            if (groups.find(children[i]) == groups.end()) {
-              groups[children[i]] = group;
+            j["links"].push_back({{ "source", (*it)->title }, { "target", title }});
+            if (groups.find(title) == groups.end()) {
+              groups[title] = group;
             }
           }
         }
@@ -254,17 +249,16 @@ int main(int argc, char* argv[]) {
       return 0;
     }
 
-    vector<string> children = get_child_titles(get_links, v->id);
+    vector<int> children = get_child_ids(get_links, v->id);
     int len = children.size();
 
-    #pragma omp parallel for num_threads(num_threads)
     for (int i = 0; i < len; i++) {
-      string child_title = children[i];
-      if (!t.search(child_title)) {
-        t.insert(child_title);
+      int child_id = children[i];
+      if (t.find(child_id) != t.end()) {
+        t.insert(child_id);
 
         page* child = new page();
-        get_page_data(get_page, child_title, &(child->id), child->title);
+        get_page_data(get_page, child_id, &(child->id), child->title);
 
         if (child->id != -1) {
           child->parent = v;
