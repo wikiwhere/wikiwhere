@@ -232,8 +232,6 @@ int main(int argc, char* argv[]) {
     unordered_map<int, page*>* trev = &tb;
     sqlite3_stmt** get_next = &get_children;
 
-    cout << "forward: " << qf.size() << ", backward: " << qb.size() << endl;
-
     if (qf.size() > qb.size()) {
       q = &qb;
       t = &tb;
