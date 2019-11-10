@@ -103,6 +103,57 @@ vector<page*> get_next_data(sqlite3_stmt* get_next, page* parent) {
   return nextList;
 }
 
+void finish(page* midf, page* midb, sqlite3_stmt* get_children) {
+  list<page*> path;
+
+  while (midf != NULL) {
+    path.push_front(midf);
+    midf = midf->next;
+  }
+  while (midb != NULL) {
+    path.push_back(midb);
+    midb = midb->next;
+  }
+
+  json j;
+
+  unordered_map<string, int> groups;
+  int group = 1;
+  for (auto it = path.begin(); it != path.end(); ++it) {
+    string title = (*it)->title;
+    j["path"].push_back(title);
+    
+    if (groups.find(title) == groups.end()) {
+      groups[title] = group;
+    }
+
+    group++;
+    vector<page*> children = get_next_data(get_children, (*it));
+    int len = children.size();
+
+    for (int i = 0; i < len; i++) {
+      int id = children[i]->id;
+      string title = children[i]->title;
+
+      if (id != -1) {
+        j["links"].push_back({{ "source", (*it)->title }, { "target", title }});
+        if (groups.find(title) == groups.end()) {
+          groups[title] = group;
+        }
+      }
+    }
+  }
+
+  for (auto it = groups.begin(); it != groups.end(); ++it) {
+    j["nodes"].push_back({{ "id", it->first }, { "group", it->second }});
+  }
+
+  json output;
+  output["status"] = 200;
+  output["data"] = j;
+  cout << output.dump() << endl;
+}
+
 int main(int argc, char* argv[]) {
   sqlite3* db_page;
   sqlite3* db_pagelinks;
@@ -248,57 +299,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (trev->find(v->id) != trev->end()) {
-      page* current = v;
-      page* currentrev = (*trev)[v->id];
-
-      list<page*> path;
-
-      while (current != NULL) {
-        path.push_front(current);
-        current = current->next;
-      }
-      while (currentrev != NULL) {
-        path.push_back(currentrev);
-        currentrev = currentrev->next;
-      }
-
-      json j;
-
-      unordered_map<string, int> groups;
-      int group = 1;
-      for (auto it = path.begin(); it != path.end(); ++it) {
-        string title = (*it)->title;
-        j["path"].push_back(title);
-        
-        if (groups.find(title) == groups.end()) {
-          groups[title] = group;
-        }
-
-        group++;
-        vector<page*> children = get_next_data(get_children, (*it));
-        int len = children.size();
-
-        for (int i = 0; i < len; i++) {
-          int id = children[i]->id;
-          string title = children[i]->title;
-
-          if (id != -1) {
-            j["links"].push_back({{ "source", (*it)->title }, { "target", title }});
-            if (groups.find(title) == groups.end()) {
-              groups[title] = group;
-            }
-          }
-        }
-      }
-
-      for (auto it = groups.begin(); it != groups.end(); ++it) {
-        j["nodes"].push_back({{ "id", it->first }, { "group", it->second }});
-      }
-
-      json output;
-      output["status"] = 200;
-      output["data"] = j;
-      cout << output.dump() << endl;
+      finish(v, (*trev)[v->id]->next, get_children);
       return 0;
     }
 
@@ -308,6 +309,11 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < len; i++) {
       int next_id = next[i]->id;
       if (t->find(next_id) == t->end()) {
+        if (trev->find(next_id) != trev->end()) {
+          finish(next[i], (*trev)[next_id]->next, get_children);
+          return 0;
+        }
+
         (*t)[next_id] = next[i];
 
         q->push(next[i]);
