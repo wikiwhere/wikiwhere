@@ -1,3 +1,5 @@
+let active_modal;
+
 let toggleHelp = () => {
   let help = document.getElementsByClassName("modal")[0];
   if (help.style.display === "flex") {
@@ -70,6 +72,78 @@ let restart = (isHighlighted) => {
         .selectAll("g")
         .data(nodes)
         .enter().append("g")
+        .on("click", async (obj, index, elements) => {
+          if (active_modal !== -1 && obj.id === active_modal) return;
+          active_modal = obj.id;
+          d3.selectAll(".info-modal").remove();
+          d3.select(".nodes").selectAll("g").sort((a, b) => {
+            if (a.id === obj.id) return 1;
+            return -1;
+          });
+
+          const response = await fetch(`https://simple.wikipedia.org/api/rest_v1/page/summary/${obj.id.replace(/ /g, '_')}`);
+          if (!response.ok) return;
+          const data = await response.json();
+          if (!data.extract) return;
+
+          const text = data.extract;
+          const thumbnail = data.thumbnail;
+          let thumbnail_width = 0;
+          if (thumbnail) {
+            thumbnail_width = Math.ceil(100 * thumbnail.width / thumbnail.height);
+          }
+
+          const el = d3.select(elements[index])
+
+          const container = el.append("foreignObject")
+            .attr("class", "info-modal")
+            .attr("width", 120 + thumbnail_width)
+            .attr("height", 110)
+            .attr("x", obj.x - 10)
+            .attr("y", obj.y + 8)
+            .append("xhtml:body")
+            .style("width", `${100 + thumbnail_width}px`)
+            .style("height", "100px")
+            .style("margin-left", "10px")
+            .style("background", "rgb(250, 250, 250)")
+            .style("box-shadow", "0 3px 4px 0 rgba(0,0,0,0.24), 0 1px 1px 0 rgba(0,0,0,0.19)")
+            .on("click", () => d3.event.stopPropagation())
+            .on("dblclick", () => d3.event.stopPropagation())
+            .append("a")
+            .attr("href", data.content_urls.desktop.page)
+            .attr("target", "_blank")
+            .attr("rel", "noopener noreferrer");
+
+          const textContainer = container.append("xhtml:div")
+            .style("float", "left")
+            .style("height", "100px")
+            .style("width", "100px")
+            .style("position", "relative");
+
+          textContainer.append("xhtml:div")
+            .style("font-size", "6px")
+            .style("color", "black")
+            .style("padding", "5px")
+            .style("margin-top", "-6px")
+            .style("height", "90px")
+            .style("width", "90px")
+            .style("overflow", "hidden")
+            .html(data.extract_html);
+
+          textContainer.append("xhtml:div")
+            .style("position", "absolute")
+            .style("left", "0")
+            .style("bottom", "0")
+            .style("height", "15px")
+            .style("width", "100px")
+            .style("background", "linear-gradient(rgba(250, 250, 250, 0), rgba(250, 250, 250, 1)");
+
+          if (thumbnail_width > 0) {
+            container.append("xhtml:img")
+              .attr("height", 100)
+              .attr("src", thumbnail.source);
+          }
+        })
         .on("dblclick", (d) => {
             search(d.id, d.group, false)
         });
@@ -219,6 +293,11 @@ let ticked = () => {
         .select("text")
         .attr("x", d => d.x + labelOffsetX)
         .attr("y", d => d.y + labelOffsetY);
+
+    node
+        .selectAll(".info-modal")
+        .attr("x", d => d.x + labelOffsetX - 10)
+        .attr("y", d => d.y + 8);
 };
 
 drag = simulation => {
@@ -345,4 +424,12 @@ input2.addEventListener("keyup", function(event) {
     if (event.keyCode === 13) {
       btn2.click();
     }
+});
+
+document.addEventListener("click", function(event) {
+  console.log(event.target.parentElement.classList.contains("info-modal"));
+  if (!event.target.parentElement.classList.contains("info-modal")) {
+    d3.selectAll(".info-modal").remove();
+    active_modal = -1;
+  }
 });
