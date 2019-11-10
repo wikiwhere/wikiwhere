@@ -80,6 +80,29 @@ vector<int> get_child_ids(sqlite3_stmt* get_links, int page_id) {
   return child_ids;
 }
 
+vector<page*> get_children_data(sqlite3_stmt* get_children, page* parent) {
+  vector<page*> children;
+  int rc;
+
+  sqlite3_reset(get_children);
+  sqlite3_bind_int(get_children, 1, parent->id);
+
+  do {
+    rc = sqlite3_step(get_children);
+    if (rc != SQLITE_ROW) break;
+
+    page* child = new page();
+
+    child->title = string(reinterpret_cast<const char*>(sqlite3_column_text(get_children, 1)));
+    child->id = sqlite3_column_int64(get_children, 0);
+    child->parent = parent;
+
+    children.push_back(child);
+  } while (true);
+
+  return children;
+}
+
 int main(int argc, char* argv[]) {
   sqlite3* db_page;
   sqlite3* db_pagelinks;
@@ -131,10 +154,14 @@ int main(int argc, char* argv[]) {
   sqlite3_stmt* find_page;
   sqlite3_stmt* get_page;
   sqlite3_stmt* get_links;
+  sqlite3_stmt* get_children;
 
-  sqlite3_prepare_v2(db_page, "SELECT page_id,page_title FROM page WHERE page_namespace=0 AND page_title=?1", -1, &find_page, 0);
-  sqlite3_prepare_v2(db_page, "SELECT page_id,page_title FROM page WHERE page_id=?1", -1, &get_page, 0);
-  sqlite3_prepare_v2(db_pagelinks, "SELECT pl_to FROM pagelinks WHERE pl_from=?", -1, &get_links, 0);
+  sqlite3_exec(db_pagelinks, ("ATTACH '" + string(argv[1]) + "' as page;").c_str(), NULL, NULL, NULL);
+  sqlite3_prepare_v2(db_pagelinks, "SELECT page_id,page_title FROM page.page WHERE page_namespace=0 AND page_title=?1", -1, &find_page, 0);
+  sqlite3_prepare_v2(db_pagelinks, "SELECT page_id,page_title FROM page.page WHERE page_id=?1", -1, &get_page, 0);
+  sqlite3_prepare_v2(db_pagelinks, "SELECT pl_to FROM main.pagelinks WHERE pl_from=?", -1, &get_links, 0);
+
+  sqlite3_prepare_v2(db_pagelinks, "SELECT page_id,page_title FROM main.pagelinks a INNER JOIN page.page b ON b.page_id = a.pl_to WHERE pl_from=?", -1, &get_children, 0);
 
   page* source = new page();
   find_page_data(find_page, argv[4], &(source->id), source->title, SQLITE_STATIC);
@@ -150,7 +177,7 @@ int main(int argc, char* argv[]) {
   source->parent = NULL;
 
   if (command == "children") {
-    vector<int> children = get_child_ids(get_links, source->id);
+    vector<page*> children = get_children_data(get_children, source);
 
     json j;
     int len = children.size();
@@ -158,10 +185,9 @@ int main(int argc, char* argv[]) {
 
     j["nodes"].push_back({{ "id", source->title }, { "group", level - 1 }});
     for (int i = 0; i < len; i++) {
-      int id;
-      string title;
+      int id = children[i]->id;
+      string title = children[i]->title;
 
-      get_page_data(get_page, children[i], &id, title);
       if (id != -1) {
         j["nodes"].push_back({{ "id", title }, { "group", level }});
         j["links"].push_back({{ "source", source->title }, { "target", title }});
@@ -198,6 +224,12 @@ int main(int argc, char* argv[]) {
   while (!q.empty()) {
     page* v = q.front();
     q.pop();
+
+    if (v->title == "") {
+      get_page_data(get_page, v->id, &(v->id), v->title);
+      if (v->id == -1) continue;
+    }
+
     if (v->title.compare(target) == 0) {
       page* current = v;
 
@@ -221,14 +253,13 @@ int main(int argc, char* argv[]) {
         }
 
         group++;
-        vector<int> children = get_child_ids(get_links, (*it)->id);
+        vector<page*> children = get_children_data(get_children, (*it));
         int len = children.size();
 
         for (int i = 0; i < len; i++) {
-          int id;
-          string title;
+          int id = children[i]->id;
+          string title = children[i]->title;
 
-          get_page_data(get_page, children[i], &id, title);
           if (id != -1) {
             j["links"].push_back({{ "source", (*it)->title }, { "target", title }});
             if (groups.find(title) == groups.end()) {
@@ -249,21 +280,15 @@ int main(int argc, char* argv[]) {
       return 0;
     }
 
-    vector<int> children = get_child_ids(get_links, v->id);
+    vector<page*> children = get_children_data(get_children, v);
     int len = children.size();
 
     for (int i = 0; i < len; i++) {
-      int child_id = children[i];
-      if (t.find(child_id) != t.end()) {
+      int child_id = children[i]->id;
+      if (t.find(child_id) == t.end()) {
         t.insert(child_id);
 
-        page* child = new page();
-        get_page_data(get_page, child_id, &(child->id), child->title);
-
-        if (child->id != -1) {
-          child->parent = v;
-          q.push(child);
-        }
+        q.push(children[i]);
       }
     }
   }

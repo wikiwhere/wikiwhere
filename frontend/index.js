@@ -81,7 +81,7 @@ let restart = (isHighlighted) => {
             return -1;
           });
 
-          const response = await fetch(`https://simple.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(obj.id.replace(/ /g, '_'))}`);
+          const response = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(obj.id.replace(/ /g, '_'))}`);
           if (!response.ok) return;
           const data = await response.json();
           if (!data.extract) return;
