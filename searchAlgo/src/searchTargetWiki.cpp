@@ -1,7 +1,7 @@
 #include <iostream>
 #include <queue>
 #include <vector>
-#include <forward_list>
+#include <list>
 #include <unordered_map>
 #include <unordered_set>
 #include "sqlite3/sqlite3.h"
@@ -17,7 +17,7 @@ using json = nlohmann::json;
 struct page {
   int id;
   string title;
-  page* parent;
+  page* next;
 };
 
 void find_page_data(sqlite3_stmt* find_page, string title, int* page_id, string& page_title, sqlite3_destructor_type destructor = SQLITE_TRANSIENT) {
@@ -80,27 +80,27 @@ vector<int> get_child_ids(sqlite3_stmt* get_links, int page_id) {
   return child_ids;
 }
 
-vector<page*> get_children_data(sqlite3_stmt* get_children, page* parent) {
-  vector<page*> children;
+vector<page*> get_next_data(sqlite3_stmt* get_next, page* parent) {
+  vector<page*> nextList;
   int rc;
 
-  sqlite3_reset(get_children);
-  sqlite3_bind_int(get_children, 1, parent->id);
+  sqlite3_reset(get_next);
+  sqlite3_bind_int(get_next, 1, parent->id);
 
   do {
-    rc = sqlite3_step(get_children);
+    rc = sqlite3_step(get_next);
     if (rc != SQLITE_ROW) break;
 
-    page* child = new page();
+    page* next = new page();
 
-    child->title = string(reinterpret_cast<const char*>(sqlite3_column_text(get_children, 1)));
-    child->id = sqlite3_column_int64(get_children, 0);
-    child->parent = parent;
+    next->title = string(reinterpret_cast<const char*>(sqlite3_column_text(get_next, 1)));
+    next->id = sqlite3_column_int64(get_next, 0);
+    next->next = parent;
 
-    children.push_back(child);
+    nextList.push_back(next);
   } while (true);
 
-  return children;
+  return nextList;
 }
 
 int main(int argc, char* argv[]) {
@@ -155,6 +155,7 @@ int main(int argc, char* argv[]) {
   sqlite3_stmt* get_page;
   sqlite3_stmt* get_links;
   sqlite3_stmt* get_children;
+  sqlite3_stmt* get_parents;
 
   sqlite3_exec(db_pagelinks, ("ATTACH '" + string(argv[1]) + "' as page;").c_str(), NULL, NULL, NULL);
   sqlite3_prepare_v2(db_pagelinks, "SELECT page_id,page_title FROM page.page WHERE page_namespace=0 AND page_title=?1", -1, &find_page, 0);
@@ -162,6 +163,7 @@ int main(int argc, char* argv[]) {
   sqlite3_prepare_v2(db_pagelinks, "SELECT pl_to FROM main.pagelinks WHERE pl_from=?", -1, &get_links, 0);
 
   sqlite3_prepare_v2(db_pagelinks, "SELECT page_id,page_title FROM main.pagelinks a INNER JOIN page.page b ON b.page_id = a.pl_to WHERE pl_from=?", -1, &get_children, 0);
+  sqlite3_prepare_v2(db_pagelinks, "SELECT page_id,page_title FROM main.pagelinks a INNER JOIN page.page b ON b.page_id = a.pl_from WHERE pl_to=?", -1, &get_parents, 0);
 
   page* source = new page();
   find_page_data(find_page, argv[4], &(source->id), source->title, SQLITE_STATIC);
@@ -174,10 +176,10 @@ int main(int argc, char* argv[]) {
     return 2;
   }
 
-  source->parent = NULL;
+  source->next = NULL;
 
   if (command == "children") {
-    vector<page*> children = get_children_data(get_children, source);
+    vector<page*> children = get_next_data(get_children, source);
 
     json j;
     int len = children.size();
@@ -201,11 +203,9 @@ int main(int argc, char* argv[]) {
     return 0;
   }
 
-  string target = argv[5];
-
-  int target_id;
-  find_page_data(find_page, target, &target_id, target, SQLITE_STATIC);
-  if (target_id == -1) {
+  page* target = new page();
+  find_page_data(find_page, argv[5], &(target->id), target->title, SQLITE_STATIC);
+  if (target->id == -1) {
     json output;
     output["status"] = 400;
     output["data"]["msg"] = "Target page does not exist.";
@@ -215,29 +215,53 @@ int main(int argc, char* argv[]) {
 
   // cout << source->title << " -> " << target << endl;
 
-  unordered_set<int> t;
-  queue<page*> q;
+  unordered_map<int, page*> tf;
+  unordered_map<int, page*> tb;
+  queue<page*> qf;
+  queue<page*> qb;
   
-  t.insert(source->id);
-  q.push(source);
+  tf[source->id] = source;
+  qf.push(source);
+  
+  tb[target->id] = target;
+  qb.push(target);
 
-  while (!q.empty()) {
-    page* v = q.front();
-    q.pop();
+  while (!qf.empty() && !qb.empty()) {
+    queue<page*>* q = &qf;
+    unordered_map<int, page*>* t = &tf;
+    unordered_map<int, page*>* trev = &tb;
+    sqlite3_stmt** get_next = &get_children;
+
+    cout << "forward: " << qf.size() << ", backward: " << qb.size() << endl;
+
+    if (qf.size() > qb.size()) {
+      q = &qb;
+      t = &tb;
+      trev = &tf;
+      get_next = &get_parents;
+    }
+
+    page* v = q->front();
+    q->pop();
 
     if (v->title == "") {
       get_page_data(get_page, v->id, &(v->id), v->title);
       if (v->id == -1) continue;
     }
 
-    if (v->title.compare(target) == 0) {
+    if (trev->find(v->id) != trev->end()) {
       page* current = v;
+      page* currentrev = (*trev)[v->id];
 
-      forward_list<page*> path;
+      list<page*> path;
 
       while (current != NULL) {
         path.push_front(current);
-        current = current->parent;
+        current = current->next;
+      }
+      while (currentrev != NULL) {
+        path.push_back(currentrev);
+        currentrev = currentrev->next;
       }
 
       json j;
@@ -253,7 +277,7 @@ int main(int argc, char* argv[]) {
         }
 
         group++;
-        vector<page*> children = get_children_data(get_children, (*it));
+        vector<page*> children = get_next_data(get_children, (*it));
         int len = children.size();
 
         for (int i = 0; i < len; i++) {
@@ -280,15 +304,15 @@ int main(int argc, char* argv[]) {
       return 0;
     }
 
-    vector<page*> children = get_children_data(get_children, v);
-    int len = children.size();
+    vector<page*> next = get_next_data(*get_next, v);
+    int len = next.size();
 
     for (int i = 0; i < len; i++) {
-      int child_id = children[i]->id;
-      if (t.find(child_id) == t.end()) {
-        t.insert(child_id);
+      int next_id = next[i]->id;
+      if (t->find(next_id) == t->end()) {
+        (*t)[next_id] = next[i];
 
-        q.push(children[i]);
+        q->push(next[i]);
       }
     }
   }
