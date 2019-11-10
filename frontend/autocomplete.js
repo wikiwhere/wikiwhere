@@ -19,7 +19,7 @@ const setupAutocomplete = (input) => {
       if (val === arr[i]) input.setAttribute('valid-input', true);
       const b = document.createElement('div');
       b.innerHTML = arr[i];
-      b.innerHTML += `<input type='hidden' value='${arr[i]}'>`;
+      b.innerHTML += `<input type="hidden" value="${arr[i].replace(/"/g, '&quot;')}">`;
       b.addEventListener('click', function(e) {
         console.log('click');
         input.value = this.getElementsByTagName('input')[0].value;
@@ -75,7 +75,7 @@ const setupAutocomplete = (input) => {
   });
 
   input.addEventListener('blur', (e) => {
-    setTimeout(closeAllLists, 250);
+    // setTimeout(closeAllLists, 250);
   });
 } 
 
