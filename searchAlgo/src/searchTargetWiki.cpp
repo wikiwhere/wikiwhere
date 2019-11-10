@@ -30,12 +30,12 @@ void get_page_data(vector<sqlite3_stmt*> get_page_v, string title, int* page_id,
   sqlite3_stmt* get_page = get_page_v[omp_get_thread_num()];
 
   sqlite3_reset(get_page);
-	int rc = sqlite3_bind_text(get_page, 1, title.c_str(), -1, destructor);
-	if (rc) {
-		cout << "Bind failed " << rc << endl;
-	}
+  int rc = sqlite3_bind_text(get_page, 1, title.c_str(), -1, destructor);
+  if (rc) {
+    cout << "Bind failed " << rc << endl;
+  }
 
-	rc = sqlite3_step(get_page);
+  rc = sqlite3_step(get_page);
   if (rc != SQLITE_ROW) {
     if (page_id != 0) *page_id = -1;
     page_title = "";
@@ -45,35 +45,35 @@ void get_page_data(vector<sqlite3_stmt*> get_page_v, string title, int* page_id,
 
   string temp_page_title(reinterpret_cast<const char*>(sqlite3_column_text(get_page, 1)));
 
-	if (page_id != 0) *page_id = sqlite3_column_int64(get_page, 0);
-	page_title = temp_page_title;
+  if (page_id != 0) *page_id = sqlite3_column_int64(get_page, 0);
+  page_title = temp_page_title;
 }
 
 vector<string> get_child_titles(vector<sqlite3_stmt*> get_links_v, int page_id) {
   sqlite3_stmt* get_links = get_links_v[omp_get_thread_num()];
 
   vector<string> child_titles;
-	int rc;
+  int rc;
 
   sqlite3_reset(get_links);
-	sqlite3_bind_int(get_links, 1, page_id);
+  sqlite3_bind_int(get_links, 1, page_id);
 
-	do {
-		rc = sqlite3_step(get_links);
-		if (rc != SQLITE_ROW) break;
+  do {
+    rc = sqlite3_step(get_links);
+    if (rc != SQLITE_ROW) break;
 
-		string child_title(reinterpret_cast<const char*>(sqlite3_column_text(get_links, 0)));
+    string child_title(reinterpret_cast<const char*>(sqlite3_column_text(get_links, 0)));
     child_titles.push_back(child_title);
-	} while (true);
+  } while (true);
 
   return child_titles;
 }
 
 int main(int argc, char* argv[]) {
-	sqlite3* db_page;
-	sqlite3* db_pagelinks;
-	int rc_page;
-	int rc_pagelinks;
+  sqlite3* db_page;
+  sqlite3* db_pagelinks;
+  int rc_page;
+  int rc_pagelinks;
 
   if (argc < 3) {
     json output;
@@ -83,39 +83,39 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-	rc_page = sqlite3_open(argv[1], &db_page);
-	rc_pagelinks = sqlite3_open(argv[2], &db_pagelinks);
+  rc_page = sqlite3_open(argv[1], &db_page);
+  rc_pagelinks = sqlite3_open(argv[2], &db_pagelinks);
 
-	// attempt to open
-	if (rc_page) {
+  // attempt to open
+  if (rc_page) {
     json output;
     output["status"] = 500;
     string msg =  "Can't open database: ";
     msg.append(sqlite3_errmsg(db_pagelinks));
     output["data"]["msg"] = msg;
     cout << output.dump() << endl;
-		return 1;
-	} else if (rc_pagelinks) {
+    return 1;
+  } else if (rc_pagelinks) {
     json output;
     output["status"] = 500;
     string msg =  "Can't open database: ";
     msg.append(sqlite3_errmsg(db_pagelinks));
     output["data"]["msg"] = msg;
     cout << output.dump() << endl;
-		return 1;
-	}
+    return 1;
+  }
 
   string command = argv[3];
   transform(command.begin(), command.end(), command.begin(),
     [](unsigned char c){ return tolower(c); }); // convert command to lower case
 
-	if (argc != 6 || !(command == "children" || command == "path")) {
+  if (argc != 6 || !(command == "children" || command == "path")) {
     json output;
     output["status"] = 500;
     output["data"]["msg"] = "Server error";
     cout << output.dump() << endl;
-		return 2;
-	}
+    return 2;
+  }
 
   vector<sqlite3_stmt*> get_page;
   vector<sqlite3_stmt*> get_links;
@@ -124,8 +124,8 @@ int main(int argc, char* argv[]) {
     sqlite3_stmt* temp_get_page;
     sqlite3_stmt* temp_get_links;
 
-    sqlite3_prepare_v2(db_page, "SELECT page_id,page_title FROM page WHERE page_title=?1", -1, &temp_get_page, 0);
-    sqlite3_prepare_v2(db_pagelinks, "SELECT pl_title FROM pagelinks WHERE pl_from=?", -1, &temp_get_links, 0);
+    sqlite3_prepare_v2(db_page, "SELECT page_id,page_title FROM page WHERE page_namespace=0 AND page_title=?1", -1, &temp_get_page, 0);
+    sqlite3_prepare_v2(db_pagelinks, "SELECT pl_title FROM pagelinks WHERE pl_namespace=0 AND pl_from_namespace=0 AND pl_from=?", -1, &temp_get_links, 0);
 
     get_page.push_back(temp_get_page);
     get_links.push_back(temp_get_links);
@@ -134,13 +134,13 @@ int main(int argc, char* argv[]) {
   page* source = new page();
   get_page_data(get_page, argv[4], &(source->id), source->title, SQLITE_STATIC);
 
-	if (source->id == -1) {
+  if (source->id == -1) {
     json output;
     output["status"] = 400;
     output["data"]["msg"] = "Source page does not exist.";
     cout << output.dump() << endl;
-		return 2;
-	}
+    return 2;
+  }
 
   source->parent = NULL;
 
@@ -175,13 +175,13 @@ int main(int argc, char* argv[]) {
 
   int target_id;
   get_page_data(get_page, target, &target_id, target, SQLITE_STATIC);
-	if (target_id == -1) {
+  if (target_id == -1) {
     json output;
     output["status"] = 400;
     output["data"]["msg"] = "Target page does not exist.";
     cout << output.dump() << endl;
-		return 2;
-	}
+    return 2;
+  }
 
   // cout << source->title << " -> " << target << endl;
 
@@ -199,9 +199,9 @@ int main(int argc, char* argv[]) {
     q.pop();
     if (v->title.compare(target) == 0) {
       //stop timing  and display runtime
-  	  auto end = std::chrono::system_clock::now();
-  	  auto elapsed_seconds = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
-  	  // std::cout << "\nruntime:" << elapsed_seconds.count() << " ms\n\n";
+      auto end = std::chrono::system_clock::now();
+      auto elapsed_seconds = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
+      // std::cout << "\nruntime:" << elapsed_seconds.count() << " ms\n\n";
 
       page* current = v;
 
