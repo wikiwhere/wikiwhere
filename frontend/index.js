@@ -401,6 +401,7 @@ let input1 = document.getElementById("articleSearch1");
 let input2 = document.getElementById("articleSearch2");
 let btn1 = document.getElementById("btn1");
 let btn2 = document.getElementById("btn2");
+let btn3 = document.getElementById("btn3");
 
 btn1.addEventListener("click", function(event) {
   search(input1.value, 1, false);
@@ -412,6 +413,12 @@ btn2.addEventListener("click", function(event) {
   } else {
     search(input1.value, 1, false, input2.value);
   }
+});
+
+btn3.addEventListener("click", function(event) {
+  const temp = input1.value;
+  input1.value = input2.value
+  input2.value = temp;
 });
 
 input1.addEventListener("keyup", function(event) {
