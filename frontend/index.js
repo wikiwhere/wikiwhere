@@ -168,8 +168,6 @@ let restart = (isHighlighted) => {
         .attr("x", labelOffsetX)
         .attr("y", labelOffsetY);
 
-    console.log(node);
-
     // Update simulation parameters
     simulation.nodes(nodes);
     simulation.force("link").links(links);
@@ -195,7 +193,7 @@ async function search(article, depth, shouldReset, article2) {
 
     startLoading();
 
-    const base = "https://wikiwhere.org/api";
+    const base = "/api";
     const childUrl = `${base}/children?source=${article}&group=${depth}`;
     const pathUrl = `${base}/path?source=${article}&target=${article2}`;
     const url = article2 ? pathUrl : childUrl;
@@ -230,15 +228,12 @@ async function search(article, depth, shouldReset, article2) {
     }
 
     const data = await response.json();
-    console.log(data);
     if (shouldReset) {
         nodeSet = new Set();
         linkSet = new Set();
     }
 
     [ newNodes, newLinks ] = resolveDiff(data.nodes, data.links);
-    console.log(JSON.parse(JSON.stringify(newNodes)));
-    console.log(JSON.parse(JSON.stringify(newLinks)));
 //  newNodes = [
 //    { id: "Article 1", group: 1 },
 //    { id: "Article 2", group: 2 },
@@ -356,10 +351,7 @@ let node = svg.append("g")
     .attr("class", "nodes")
     .selectAll("g")
     .data(nodes)
-    .enter().append("g")
-    .on("click", (e) => {
-        console.log("click", e)
-    });
+    .enter().append("g");
 
 let circles = node.append("circle")
     .attr("r", circleRadius)
@@ -434,7 +426,6 @@ input2.addEventListener("keyup", function(event) {
 });
 
 document.addEventListener("click", function(event) {
-  console.log(event.target.parentElement.classList.contains("info-modal"));
   if (!event.target.parentElement.classList.contains("info-modal")) {
     d3.selectAll(".info-modal").remove();
     active_modal = -1;
