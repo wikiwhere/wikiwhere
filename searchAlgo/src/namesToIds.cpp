@@ -55,7 +55,7 @@ void get_page_data(sqlite3_stmt* get_page, string title, int* page_id, string& p
   ids.insert(data);
 }
 
-int main(int argc, char* argv[]) {
+int _main(int argc, char* argv[]) {
   sqlite3* db_page;
   int rc_page;
 

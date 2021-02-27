@@ -21,7 +21,6 @@ const setupAutocomplete = (input) => {
       b.innerHTML = arr[i];
       b.innerHTML += `<input type="hidden" value="${arr[i].replace(/"/g, '&quot;')}">`;
       b.addEventListener('click', function(e) {
-        console.log('click');
         input.value = this.getElementsByTagName('input')[0].value;
         input.setAttribute('valid-input', true);
         closeAllLists();
